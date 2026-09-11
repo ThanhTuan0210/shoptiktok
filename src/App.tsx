@@ -1,4 +1,4 @@
-﻿import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Layout from "./components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
@@ -9,6 +9,7 @@ import IssuesWrapper from "./pages/IssuesWrapper";
 import Customers from "./pages/Customers";
 import Partners from "./pages/Partners";
 import Settings from "./pages/Settings";
+import Storefront from "./pages/Storefront";
 import { seedDatabase } from "./utils/seedData";
 import { db } from "./db/database";
 
@@ -25,6 +26,32 @@ export default function App() {
         return;
       }
       await seedDatabase();
+            // Tá»± Ä‘á»™ng gÃ¡n áº£nh cho cÃ¡c sáº£n pháº©m
+      const prodImages: Record<string, string> = {
+        "PJ-SOC-DEN-001": "https://images.unsplash.com/photo-1618683510526-7a8e7e1136b6?w=400&q=80",
+        "PJ-SOC-HON-001": "https://images.unsplash.com/photo-1520108990525-4c014798c5ee?w=400&q=80",
+        "PJ-SOC-NAU-001": "https://images.unsplash.com/photo-1502716119720-b23a93e5fe1b?w=400&q=80",
+        "PJ-TRON-XANH-001": "https://images.unsplash.com/photo-1584474775439-d3e9c60e4dc3?w=400&q=80",
+        "PJ-TRON-HONG-001": "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80",
+        "PJ-TRON-TRANG-001": "https://images.unsplash.com/photo-1563178229-30790d93f7e1?w=400&q=80",
+        "PJ-CARO-BE-001": "https://images.unsplash.com/photo-1563234907-7e61eec3be3b?w=400&q=80",
+        "PJ-CARO-DO-001": "https://images.unsplash.com/photo-1596001170757-0b1965b82098?w=400&q=80",
+        "PJ-NGAN-MAT-001": "https://images.unsplash.com/photo-1574015974293-817f0ebebb74?w=400&q=80",
+        "VN-LUA-TRANG-001": "https://images.unsplash.com/photo-1591522967160-c976938d21db?w=400&q=80",
+        "AC-LUA-CAOCAP-001": "https://images.unsplash.com/photo-1585255474320-b4bdc285e687?w=400&q=80",
+        "QUAN-PJ-RO-001": "https://images.unsplash.com/photo-1601614051010-8dc0244400e9?w=400&q=80",
+        "GIFT-COUPLE-001": "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?w=400&q=80"
+      };
+      
+      const currentProducts = await db.products.toArray();
+      let hasUpdates = false;
+      for (const p of currentProducts) {
+        if (!p.imageUrl && prodImages[p.sku]) {
+          await db.products.update(p.id, { imageUrl: prodImages[p.sku] });
+          hasUpdates = true;
+        }
+      }
+      
       setReady(true);
     }
     init().catch(console.error);
@@ -38,7 +65,7 @@ export default function App() {
         </div>
         <div style={{ textAlign: "center" }}>
           <p style={{ color: "white", fontWeight: "bold", fontSize: "18px", fontStyle: "italic", fontFamily: "Georgia, serif" }}>Henr.Studio</p>
-          <p style={{ color: "#6b7280", fontSize: "13px", marginTop: "4px" }}>Đang khởi động hệ thống...</p>
+          <p style={{ color: "#6b7280", fontSize: "13px", marginTop: "4px" }}>Äang khá»Ÿi Ä‘á»™ng há»‡ thá»‘ng...</p>
         </div>
       </div>
     );
