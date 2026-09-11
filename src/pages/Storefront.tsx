@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { db } from "../db/database";
 import type { Product, ProductVariant } from "../types";
-import { ShoppingCart, Search, X, CheckCircle, Zap, Star, ShieldCheck, Truck } from "lucide-react";
+import { ShoppingCart, Search, X, CheckCircle, Zap, Star, ShieldCheck, Settings } from "lucide-react";
 import { formatCurrency, generateId, now, today } from "../utils/helpers";
+import { useNavigate } from "react-router-dom";
 
 interface CartItem {
   variantId: string;
@@ -13,6 +14,7 @@ interface CartItem {
 }
 
 export default function Storefront() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -23,8 +25,14 @@ export default function Storefront() {
   const [checkoutForm, setCheckoutForm] = useState({ name: "", phone: "", address: "" });
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
 
+  // Editable Shop Settings
+  const [shopName, setShopName] = useState(localStorage.getItem('tt_shopName') || "Henr.Studio");
+  const [bannerTitle, setBannerTitle] = useState(localStorage.getItem('tt_bannerTitle') || "SALE SẬP SÀN");
+  const [bannerSub, setBannerSub] = useState(localStorage.getItem('tt_bannerSub') || "Miễn phí vận chuyển toàn quốc");
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+
   useEffect(() => {
-    document.title = "Shop | Henr.Studio";
+    document.title = `${shopName} | Cửa Hàng`;
     async function load() {
       const allProds = await db.products.filter(p => p.isActive).toArray();
       const fallbackImages = [
@@ -38,14 +46,25 @@ export default function Storefront() {
         "https://images.unsplash.com/photo-1563234907-7e61eec3be3b?w=600&q=80"
       ];
       const fixedProds = allProds.map((p, idx) => {
-        p.imageUrl = fallbackImages[idx % fallbackImages.length];
+        // Use valid image if available, otherwise fallback
+        p.imageUrl = (p.imageUrl && p.imageUrl.length > 20 && !p.imageUrl.includes('source.unsplash.com')) 
+          ? p.imageUrl 
+          : fallbackImages[idx % fallbackImages.length];
         return p;
       });
       setProducts(fixedProds);
       setVariants(await db.productVariants.toArray());
     }
     load();
-  }, []);
+  }, [shopName]);
+
+  const saveSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('tt_shopName', shopName);
+    localStorage.setItem('tt_bannerTitle', bannerTitle);
+    localStorage.setItem('tt_bannerSub', bannerSub);
+    setIsAdminOpen(false);
+  };
 
   const cartTotal = cart.reduce((sum, item) => sum + item.product.sellingPrice * item.qty, 0);
 
@@ -113,14 +132,64 @@ export default function Storefront() {
   };
 
   return (
-    <div className="bg-[#f5f5f5] text-gray-900 min-h-screen font-sans pb-10">
+    <div className="bg-[#f5f5f5] text-gray-900 min-h-screen font-sans pb-10 relative">
       
+      {/* Floating Admin Button */}
+      <button 
+        onClick={() => setIsAdminOpen(true)}
+        className="fixed bottom-6 left-6 z-40 bg-gray-900 text-white p-3 rounded-full shadow-xl hover:bg-black hover:scale-110 transition-all flex items-center justify-center group"
+        title="Cài đặt giao diện Shop"
+      >
+        <Settings size={24} />
+        <span className="w-0 overflow-hidden whitespace-nowrap group-hover:w-24 group-hover:ml-2 transition-all duration-300 text-sm font-medium">Sửa Shop</span>
+      </button>
+
+      {/* Admin Editor Modal */}
+      {isAdminOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsAdminOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <Settings className="text-[#fe2c55]" /> Cài đặt Trang Bán Hàng
+              </h2>
+              <button onClick={() => setIsAdminOpen(false)} className="text-gray-400 hover:text-gray-900"><X size={20} /></button>
+            </div>
+            
+            <form onSubmit={saveSettings} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Tên cửa hàng (Logo)</label>
+                <input required value={shopName} onChange={e => setShopName(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:border-[#fe2c55] outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Tiêu đề Banner</label>
+                <input required value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:border-[#fe2c55] outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Mô tả Banner</label>
+                <input required value={bannerSub} onChange={e => setBannerSub(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:border-[#fe2c55] outline-none" />
+              </div>
+              
+              <div className="pt-4 flex gap-3">
+                <button type="submit" className="flex-1 bg-[#fe2c55] text-white font-bold py-3 rounded-xl hover:bg-[#e62045] transition-colors">
+                  Lưu thay đổi
+                </button>
+              </div>
+              <div className="pt-2">
+                <button type="button" onClick={() => navigate("/")} className="w-full bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors">
+                  Về trang Quản Trị Hệ Thống
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* PC & Mobile Header */}
       <header className="bg-white sticky top-0 z-40 shadow-sm text-gray-900">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 cursor-pointer shrink-0">
-            <div className="w-8 h-8 bg-black text-white font-bold text-xl italic flex items-center justify-center rounded-lg">H</div>
-            <span className="font-bold text-xl text-gray-900 hidden md:block">Henr.Studio</span>
+            <div className="w-8 h-8 bg-black text-white font-bold text-xl italic flex items-center justify-center rounded-lg">{shopName.charAt(0)}</div>
+            <span className="font-bold text-xl text-gray-900 hidden md:block">{shopName}</span>
           </div>
 
           <div className="flex-1 max-w-2xl bg-[#f1f1f1] h-10 rounded-full flex items-center px-4 border border-transparent focus-within:border-[#fe2c55] focus-within:bg-white transition-colors">
@@ -149,8 +218,8 @@ export default function Storefront() {
             <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
             <div className="relative z-10 text-white">
               <span className="bg-black/30 px-2 py-1 rounded text-xs font-bold uppercase tracking-wider mb-2 inline-block">Chương trình đặc biệt</span>
-              <h2 className="font-extrabold text-3xl md:text-5xl italic mb-2">SALE SẬP SÀN</h2>
-              <p className="text-lg md:text-xl opacity-90 text-white">Miễn phí vận chuyển toàn quốc</p>
+              <h2 className="font-extrabold text-3xl md:text-5xl italic mb-2">{bannerTitle}</h2>
+              <p className="text-lg md:text-xl opacity-90 text-white">{bannerSub}</p>
             </div>
           </div>
           <div className="hidden md:flex flex-col gap-4">
@@ -178,7 +247,8 @@ export default function Storefront() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
           {products.map(product => (
-            <div key={product.id} onClick={() => setSelectedProduct(product)} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group border border-transparent hover:border-[#fe2c55]/30 flex flex-col">
+            <div key={product.id} onClick={() => setSelectedProduct(product)} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group border border-transparent hover:border-[#fe2c55]/30 flex flex-col relative">
+              
               <div className="relative aspect-square bg-gray-100 overflow-hidden">
                 <img src={product.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute top-0 left-0 bg-[#fe2c55] text-white text-[10px] font-bold px-2 py-1 rounded-br-lg z-10 shadow-sm">
@@ -220,10 +290,13 @@ export default function Storefront() {
             </div>
 
             {/* Info Side */}
-            <div className="w-full md:w-1/2 p-5 md:p-8 flex flex-col overflow-y-auto">
+            <div className="w-full md:w-1/2 p-5 md:p-8 flex flex-col overflow-y-auto relative">
+              {/* Quick Admin Edit Link */}
+              <button onClick={() => navigate("/products")} className="absolute top-5 right-14 text-xs font-bold text-gray-400 hover:text-[#fe2c55] underline">Sửa sản phẩm này</button>
+
               <div className="flex items-center gap-2 mb-2">
                 <span className="bg-[#fe2c55] text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase">Mall</span>
-                <span className="bg-gray-100 text-gray-900 text-[10px] px-2 py-0.5 rounded font-bold uppercase">Henr.Studio</span>
+                <span className="bg-gray-100 text-gray-900 text-[10px] px-2 py-0.5 rounded font-bold uppercase">{shopName} Official</span>
               </div>
               
               <h2 className="text-xl md:text-2xl font-bold text-gray-900 leading-snug mb-3">
@@ -313,8 +386,8 @@ export default function Storefront() {
                 <>
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-4">
                     <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center gap-2">
-                      <StoreBadge />
-                      <span className="font-bold text-sm text-gray-900">Henr.Studio Official</span>
+                      <span className="bg-[#fe2c55] text-white text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Mall</span>
+                      <span className="font-bold text-sm text-gray-900">{shopName} Official</span>
                     </div>
                     <div className="p-4 space-y-4">
                       {cart.map((item, idx) => (
@@ -370,8 +443,4 @@ export default function Storefront() {
       )}
     </div>
   );
-}
-
-function StoreBadge() {
-  return <span className="bg-[#fe2c55] text-white text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Mall</span>;
 }
