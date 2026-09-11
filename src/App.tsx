@@ -26,7 +26,7 @@ export default function App() {
         return;
       }
       await seedDatabase();
-            // TÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng gÃƒÂ¡n Ã¡ÂºÂ£nh cho cÃƒÂ¡c sÃ¡ÂºÂ£n phÃ¡ÂºÂ©m
+            // TÃƒÂ¡Ã‚Â»Ã‚Â± Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢ng gÃƒÆ’Ã‚Â¡n ÃƒÂ¡Ã‚ÂºÃ‚Â£nh cho cÃƒÆ’Ã‚Â¡c sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m
       const prodImages: Record<string, string> = {
         "PJ-SOC-DEN-001": "https://images.unsplash.com/photo-1618683510526-7a8e7e1136b6?w=400&q=80",
         "PJ-SOC-HON-001": "https://images.unsplash.com/photo-1520108990525-4c014798c5ee?w=400&q=80",
@@ -65,15 +65,18 @@ export default function App() {
         </div>
         <div style={{ textAlign: "center" }}>
           <p style={{ color: "white", fontWeight: "bold", fontSize: "18px", fontStyle: "italic", fontFamily: "Georgia, serif" }}>Henr.Studio</p>
-          <p style={{ color: "#6b7280", fontSize: "13px", marginTop: "4px" }}>Ã„Âang khÃ¡Â»Å¸i Ã„â€˜Ã¡Â»â„¢ng hÃ¡Â»â€¡ thÃ¡Â»â€˜ng...</p>
+          <p style={{ color: "#6b7280", fontSize: "13px", marginTop: "4px" }}>Ãƒâ€žÃ‚Âang khÃƒÂ¡Ã‚Â»Ã…Â¸i Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢ng hÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡ thÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœng...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <Layout>
-      <Routes>
+    <Routes>
+      <Route path="/shop" element={<Storefront />} />
+      <Route path="/*" element={
+        <Layout>
+          <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/inventory" element={<Inventory />} />
@@ -95,6 +98,8 @@ export default function App() {
         
         <Route path="/settings" element={<Settings />} />
       </Routes>
-    </Layout>
+        </Layout>
+      } />
+    </Routes>
   );
 }
