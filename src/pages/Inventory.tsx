@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { db } from "../db/database";
 import type { Product, ProductVariant, StockMovement, StockMovementType } from "../types";
 import { Package, Plus, AlertTriangle, TrendingDown, TrendingUp, Download, X, Edit2, Trash2, ChevronDown, ChevronRight, Image as ImageIcon } from "lucide-react";
@@ -16,7 +16,7 @@ interface ProductWithVariants extends Product {
 }
 
 const SIZES = ["XS", "S", "M", "L", "XL", "XXL", "Freesize"];
-const CATEGORIES = ["Pyjama Sọc Kẻ", "Pyjama Trơn", "Pyjama Ca Rô", "Pyjama Ngắn Tay", "Váy Ngủ", "Áo Choàng", "Quần Pyjama", "Gift Set", "Khác"];
+const CATEGORIES = ["Pyjama Sá»c Káº»", "Pyjama TrÆ¡n", "Pyjama Ca RÃ´", "Pyjama Ngáº¯n Tay", "VÃ¡y Ngá»§", "Ão ChoÃ ng", "Quáº§n Pyjama", "Gift Set", "KhÃ¡c"];
 
 export default function Inventory() {
   const [products, setProducts] = useState<ProductWithVariants[]>([]);
@@ -130,7 +130,7 @@ export default function Inventory() {
       await db.stockMovements.add({
         id: generateId(), variantId, productId: p.id,
         type: "purchase", quantity: newVariant.stock, unitCost: p.costPrice,
-        note: "Nhập kho ban đầu", date: today(), createdAt: now(),
+        note: "Nháº­p kho ban Ä‘áº§u", date: today(), createdAt: now(),
       });
     }
 
@@ -169,15 +169,15 @@ export default function Inventory() {
     <div className="space-y-5 animate-fade-in pb-10">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Sản phẩm & Kho hàng</h1>
-          <p className="page-subtitle">Quản lý danh sách sản phẩm, tồn kho và theo dõi doanh số</p>
+          <h1 className="page-title">Sáº£n pháº©m & Kho hÃ ng</h1>
+          <p className="page-subtitle">Quáº£n lÃ½ danh sÃ¡ch sáº£n pháº©m, tá»“n kho vÃ  theo dÃµi doanh sá»‘</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setShowMovements(true)} className="btn-secondary hidden sm:flex">
-            <TrendingUp size={16} /> Lịch sử kho
+            <TrendingUp size={16} /> Lá»‹ch sá»­ kho
           </button>
           <button onClick={() => setShowAddProduct(true)} className="btn-primary">
-            <Plus size={16} /> Thêm sản phẩm mới
+            <Plus size={16} /> ThÃªm sáº£n pháº©m má»›i
           </button>
         </div>
       </div>
@@ -185,52 +185,56 @@ export default function Inventory() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="card-sm text-center">
           <p className="text-2xl font-bold text-blue-400">{formatNumber(products.length)}</p>
-          <p className="text-xs text-gray-400 mt-1">Tổng sản phẩm</p>
+          <p className="text-xs text-gray-400 mt-1">Tá»•ng sáº£n pháº©m</p>
         </div>
         <div className="card-sm text-center">
           <p className="text-2xl font-bold text-emerald-400">{formatNumber(products.reduce((s, p) => s + p.totalSold, 0))}</p>
-          <p className="text-xs text-gray-400 mt-1">Đã bán (All time)</p>
+          <p className="text-xs text-gray-400 mt-1">ÄÃ£ bÃ¡n (All time)</p>
         </div>
         <div className="card-sm text-center">
           <p className="text-2xl font-bold text-amber-400">{formatNumber(lowStockCount)}</p>
-          <p className="text-xs text-gray-400 mt-1">Sắp hết hàng</p>
+          <p className="text-xs text-gray-400 mt-1">Sáº¯p háº¿t hÃ ng</p>
         </div>
         <div className="card-sm text-center">
           <p className="text-lg font-bold text-white">{formatCurrency(totalValue)}</p>
-          <p className="text-xs text-gray-400 mt-1">Giá trị tồn kho</p>
+          <p className="text-xs text-gray-400 mt-1">GiÃ¡ trá»‹ tá»“n kho</p>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
-        <SearchInput value={search} onChange={setSearch} placeholder="Tìm tên sản phẩm, SKU..." />
+        <SearchInput value={search} onChange={setSearch} placeholder="TÃ¬m tÃªn sáº£n pháº©m, SKU..." />
         <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="input w-44">
-          <option value="all">Tất cả danh mục</option>
+          <option value="all">Táº¥t cáº£ danh má»¥c</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
         <select value={stockFilter} onChange={e => setStockFilter(e.target.value)} className="input w-40">
-          <option value="all">Tất cả tồn kho</option>
-          <option value="ok">Còn hàng</option>
-          <option value="low">Sắp hết</option>
-          <option value="zero">Hết hàng</option>
+          <option value="all">Táº¥t cáº£ tá»“n kho</option>
+          <option value="ok">CÃ²n hÃ ng</option>
+          <option value="low">Sáº¯p háº¿t</option>
+          <option value="zero">Háº¿t hÃ ng</option>
         </select>
         {(search || categoryFilter !== "all" || stockFilter !== "all") && (
-          <button onClick={() => { setSearch(""); setCategoryFilter("all"); setStockFilter("all"); }} className="btn-secondary text-xs"><X size={14} /> Xóa lọc</button>
+          <button onClick={() => { setSearch(""); setCategoryFilter("all"); setStockFilter("all"); }} className="btn-secondary text-xs"><X size={14} /> XÃ³a lá»c</button>
         )}
       </div>
 
       <div className="space-y-3">
         {loading ? (
-          <div className="text-center py-10 text-gray-500">Đang tải...</div>
+          <div className="text-center py-10 text-gray-500">Äang táº£i...</div>
         ) : filtered.length === 0 ? (
-          <EmptyState icon={Package} title="Không có sản phẩm" description="Thêm sản phẩm để bắt đầu quản lý" />
+          <EmptyState icon={Package} title="KhÃ´ng cÃ³ sáº£n pháº©m" description="ThÃªm sáº£n pháº©m Ä‘á»ƒ báº¯t Ä‘áº§u quáº£n lÃ½" />
         ) : filtered.map(product => (
           <div key={product.id} className="card-sm hover:border-gray-700 transition-colors">
             <div
               className="flex items-start sm:items-center justify-between cursor-pointer flex-col sm:flex-row gap-4"
               onClick={() => setExpandedProduct(expandedProduct === product.id ? null : product.id)}>
               <div className="flex items-center gap-4 flex-1 min-w-0 w-full">
-                <div className="w-14 h-14 bg-gray-800 rounded-lg flex items-center justify-center shrink-0 border border-gray-700">
-                  <ImageIcon size={24} className="text-gray-600" />
+                <div className="w-14 h-14 bg-gray-800 rounded-lg flex items-center justify-center shrink-0 border border-gray-700 overflow-hidden">
+                  {product.imageUrl ? (
+                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <ImageIcon size={24} className="text-gray-600" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -239,15 +243,15 @@ export default function Inventory() {
                   </div>
                   <div className="flex flex-wrap gap-4 text-xs text-gray-400">
                     <span className="font-mono text-gray-500">{product.sku}</span>
-                    <span>Giá bán: <span className="text-gray-300 font-medium">{formatCurrency(product.sellingPrice)}</span></span>
-                    <span>Giá vốn: <span className="text-gray-500">{formatCurrency(product.costPrice)}</span></span>
+                    <span>GiÃ¡ bÃ¡n: <span className="text-gray-300 font-medium">{formatCurrency(product.sellingPrice)}</span></span>
+                    <span>GiÃ¡ vá»‘n: <span className="text-gray-500">{formatCurrency(product.costPrice)}</span></span>
                   </div>
                 </div>
               </div>
               
               <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end border-t border-gray-800 sm:border-0 pt-3 sm:pt-0">
                 <div className="text-left sm:text-right">
-                  <p className="text-sm text-gray-400">Đã bán</p>
+                  <p className="text-sm text-gray-400">ÄÃ£ bÃ¡n</p>
                   <p className="font-bold text-white">{formatNumber(product.totalSold)}</p>
                 </div>
                 <div className="text-left sm:text-right hidden md:block">
@@ -255,7 +259,7 @@ export default function Inventory() {
                   <p className="font-bold text-emerald-400">{formatCurrency(product.totalRevenue)}</p>
                 </div>
                 <div className="text-left sm:text-right">
-                  <p className="text-sm text-gray-400">Tồn kho</p>
+                  <p className="text-sm text-gray-400">Tá»“n kho</p>
                   <p className={`text-lg font-bold ${getStockClass(product.totalStock, product.lowStockThreshold)}`}>
                     {formatNumber(product.totalStock)}
                   </p>
@@ -270,13 +274,13 @@ export default function Inventory() {
               <div className="mt-4 pt-4 border-t border-gray-800 animate-fade-in">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-                    Biến thể (Màu/Size)
-                    <span className="text-[10px] bg-gray-800 px-1.5 py-0.5 rounded text-gray-400">Tồn thấp: {product.lowStockThreshold}</span>
+                    Biáº¿n thá»ƒ (MÃ u/Size)
+                    <span className="text-[10px] bg-gray-800 px-1.5 py-0.5 rounded text-gray-400">Tá»“n tháº¥p: {product.lowStockThreshold}</span>
                   </h4>
                   <button 
                     onClick={(e) => { e.stopPropagation(); setShowAddVariant(product.id); setNewVariant(p => ({ ...p, sku: `${product.sku}-NEW` })) }}
                     className="btn-secondary py-1.5 px-3 text-xs text-white border-gray-700 bg-gray-800 hover:bg-gray-700">
-                    <Plus size={14} /> Thêm Màu/Size
+                    <Plus size={14} /> ThÃªm MÃ u/Size
                   </button>
                 </div>
                 <div className="table-container">
@@ -284,15 +288,15 @@ export default function Inventory() {
                     <thead>
                       <tr>
                         <th>SKU</th>
-                        <th>Màu sắc</th>
+                        <th>MÃ u sáº¯c</th>
                         <th>Size</th>
-                        <th className="text-right">Tồn kho</th>
-                        <th className="text-center">Thao tác</th>
+                        <th className="text-right">Tá»“n kho</th>
+                        <th className="text-center">Thao tÃ¡c</th>
                       </tr>
                     </thead>
                     <tbody>
                       {product.variants.length === 0 ? (
-                        <tr><td colSpan={5} className="text-center text-gray-500 py-4">Chưa có biến thể nào</td></tr>
+                        <tr><td colSpan={5} className="text-center text-gray-500 py-4">ChÆ°a cÃ³ biáº¿n thá»ƒ nÃ o</td></tr>
                       ) : product.variants.sort((a, b) => a.color.localeCompare(b.color) || SIZES.indexOf(a.size) - SIZES.indexOf(b.size)).map(v => (
                         <tr key={v.id}>
                           <td className="font-mono text-xs text-gray-400">{v.sku}</td>
@@ -306,7 +310,7 @@ export default function Inventory() {
                               <button
                                 onClick={(e) => { e.stopPropagation(); setSelectedVariant(v); setStockMove({ type: "purchase", quantity: 1, unitCost: product.costPrice, note: "" }); setShowStockModal(true); }}
                                 className="btn-secondary text-xs py-1 px-2">
-                                <TrendingUp size={12} /> Nhập/Xuất
+                                <TrendingUp size={12} /> Nháº­p/Xuáº¥t
                               </button>
                             </div>
                           </td>
@@ -323,49 +327,49 @@ export default function Inventory() {
 
       {/* Adjust Stock Modal */}
       <Modal isOpen={showStockModal} onClose={() => { setShowStockModal(false); setSelectedVariant(null); }}
-        title={`Điều chỉnh kho: ${selectedVariant?.sku}`} size="sm">
+        title={`Äiá»u chá»‰nh kho: ${selectedVariant?.sku}`} size="sm">
         <div className="space-y-4">
           {selectedVariant && (
             <div className="bg-gray-800 rounded-lg p-3 text-sm">
-              <p className="text-gray-400">Tồn kho hiện tại: <span className="text-white font-bold">{selectedVariant.stock}</span></p>
+              <p className="text-gray-400">Tá»“n kho hiá»‡n táº¡i: <span className="text-white font-bold">{selectedVariant.stock}</span></p>
             </div>
           )}
           <div>
-            <label className="label">Loại điều chỉnh</label>
+            <label className="label">Loáº¡i Ä‘iá»u chá»‰nh</label>
             <select className="input" value={stockMove.type} onChange={e => setStockMove(p => ({ ...p, type: e.target.value as StockMovementType }))}>
-              {(["purchase","return_in","adjustment"] as StockMovementType[]).map(t => <option key={t} value={t}>➕ {getStockMovementLabel(t)}</option>)}
-              {(["sale","defective","gift","loss"] as StockMovementType[]).map(t => <option key={t} value={t}>➖ {getStockMovementLabel(t)}</option>)}
+              {(["purchase","return_in","adjustment"] as StockMovementType[]).map(t => <option key={t} value={t}>âž• {getStockMovementLabel(t)}</option>)}
+              {(["sale","defective","gift","loss"] as StockMovementType[]).map(t => <option key={t} value={t}>âž– {getStockMovementLabel(t)}</option>)}
             </select>
           </div>
           <div>
-            <label className="label">Số lượng</label>
+            <label className="label">Sá»‘ lÆ°á»£ng</label>
             <input type="number" min="1" className="input" value={stockMove.quantity} onChange={e => setStockMove(p => ({ ...p, quantity: Number(e.target.value) }))} />
           </div>
           {stockMove.type === "purchase" && (
             <div>
-              <label className="label">Giá nhập (VNĐ)</label>
+              <label className="label">GiÃ¡ nháº­p (VNÄ)</label>
               <input type="number" className="input" value={stockMove.unitCost || ""} onChange={e => setStockMove(p => ({ ...p, unitCost: Number(e.target.value) }))} />
             </div>
           )}
           <div>
-            <label className="label">Ghi chú</label>
-            <input className="input" value={stockMove.note} onChange={e => setStockMove(p => ({ ...p, note: e.target.value }))} placeholder="Lý do điều chỉnh..." />
+            <label className="label">Ghi chÃº</label>
+            <input className="input" value={stockMove.note} onChange={e => setStockMove(p => ({ ...p, note: e.target.value }))} placeholder="LÃ½ do Ä‘iá»u chá»‰nh..." />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <button onClick={() => setShowStockModal(false)} className="btn-secondary">Hủy</button>
+            <button onClick={() => setShowStockModal(false)} className="btn-secondary">Há»§y</button>
             <button onClick={handleStockMovement} disabled={saving} className="btn-primary">
-              {saving ? "Đang lưu..." : "Xác nhận"}
+              {saving ? "Äang lÆ°u..." : "XÃ¡c nháº­n"}
             </button>
           </div>
         </div>
       </Modal>
 
       {/* Add Variant Modal */}
-      <Modal isOpen={!!showAddVariant} onClose={() => setShowAddVariant(null)} title="Thêm Màu/Size mới" size="sm">
+      <Modal isOpen={!!showAddVariant} onClose={() => setShowAddVariant(null)} title="ThÃªm MÃ u/Size má»›i" size="sm">
         <div className="space-y-4">
           <div>
-            <label className="label">Màu sắc *</label>
-            <input className="input" value={newVariant.color} onChange={e => setNewVariant(p => ({ ...p, color: e.target.value }))} placeholder="VD: Hồng phấn" />
+            <label className="label">MÃ u sáº¯c *</label>
+            <input className="input" value={newVariant.color} onChange={e => setNewVariant(p => ({ ...p, color: e.target.value }))} placeholder="VD: Há»“ng pháº¥n" />
           </div>
           <div>
             <label className="label">Size *</label>
@@ -374,73 +378,73 @@ export default function Inventory() {
             </select>
           </div>
           <div>
-            <label className="label">Mã SKU *</label>
+            <label className="label">MÃ£ SKU *</label>
             <input className="input" value={newVariant.sku} onChange={e => setNewVariant(p => ({ ...p, sku: e.target.value.toUpperCase() }))} placeholder="VD: PJ-HONG-S" />
           </div>
           <div>
-            <label className="label">Tồn kho ban đầu</label>
+            <label className="label">Tá»“n kho ban Ä‘áº§u</label>
             <input type="number" min="0" className="input" value={newVariant.stock} onChange={e => setNewVariant(p => ({ ...p, stock: Number(e.target.value) }))} />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <button onClick={() => setShowAddVariant(null)} className="btn-secondary">Hủy</button>
+            <button onClick={() => setShowAddVariant(null)} className="btn-secondary">Há»§y</button>
             <button onClick={handleAddVariant} disabled={saving || !newVariant.color || !newVariant.sku} className="btn-primary">
-              {saving ? "Đang thêm..." : "Thêm biến thể"}
+              {saving ? "Äang thÃªm..." : "ThÃªm biáº¿n thá»ƒ"}
             </button>
           </div>
         </div>
       </Modal>
 
       {/* Add Product Modal */}
-      <Modal isOpen={showAddProduct} onClose={() => setShowAddProduct(false)} title="Thêm sản phẩm mới" size="lg">
+      <Modal isOpen={showAddProduct} onClose={() => setShowAddProduct(false)} title="ThÃªm sáº£n pháº©m má»›i" size="lg">
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="label">Tên sản phẩm *</label>
-              <input className="input" value={newProduct.name} onChange={e => setNewProduct(p => ({ ...p, name: e.target.value }))} placeholder="VD: Bộ Pyjama lụa..." />
+              <label className="label">TÃªn sáº£n pháº©m *</label>
+              <input className="input" value={newProduct.name} onChange={e => setNewProduct(p => ({ ...p, name: e.target.value }))} placeholder="VD: Bá»™ Pyjama lá»¥a..." />
             </div>
             <div>
-              <label className="label">SKU Sản phẩm *</label>
+              <label className="label">SKU Sáº£n pháº©m *</label>
               <input className="input" value={newProduct.sku} onChange={e => setNewProduct(p => ({ ...p, sku: e.target.value.toUpperCase() }))} placeholder="VD: PJ-001" />
             </div>
             <div>
-              <label className="label">Danh mục</label>
+              <label className="label">Danh má»¥c</label>
               <select className="input" value={newProduct.category} onChange={e => setNewProduct(p => ({ ...p, category: e.target.value }))}>
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="label">Giá vốn (VNĐ)</label>
+              <label className="label">GiÃ¡ vá»‘n (VNÄ)</label>
               <input type="number" className="input" value={newProduct.costPrice || ""} onChange={e => setNewProduct(p => ({ ...p, costPrice: Number(e.target.value) }))} />
             </div>
             <div>
-              <label className="label">Giá bán (VNĐ)</label>
+              <label className="label">GiÃ¡ bÃ¡n (VNÄ)</label>
               <input type="number" className="input" value={newProduct.sellingPrice || ""} onChange={e => setNewProduct(p => ({ ...p, sellingPrice: Number(e.target.value) }))} />
             </div>
             <div>
-              <label className="label">Ngưỡng cảnh báo hết hàng</label>
+              <label className="label">NgÆ°á»¡ng cáº£nh bÃ¡o háº¿t hÃ ng</label>
               <input type="number" className="input" value={newProduct.lowStockThreshold} onChange={e => setNewProduct(p => ({ ...p, lowStockThreshold: Number(e.target.value) }))} />
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <button onClick={() => setShowAddProduct(false)} className="btn-secondary">Hủy</button>
+            <button onClick={() => setShowAddProduct(false)} className="btn-secondary">Há»§y</button>
             <button onClick={handleAddProduct} disabled={saving || !newProduct.name || !newProduct.sku} className="btn-primary">
-              Lưu sản phẩm
+              LÆ°u sáº£n pháº©m
             </button>
           </div>
         </div>
       </Modal>
 
       {/* History Modal */}
-      <Modal isOpen={showMovements} onClose={() => setShowMovements(false)} title="Lịch sử biến động kho" size="xl">
+      <Modal isOpen={showMovements} onClose={() => setShowMovements(false)} title="Lá»‹ch sá»­ biáº¿n Ä‘á»™ng kho" size="xl">
         <div className="table-container max-h-[60vh] overflow-y-auto">
           <table className="table">
             <thead>
               <tr>
-                <th>Ngày</th>
-                <th>Loại</th>
-                <th>Biến thể</th>
-                <th className="text-right">Số lượng</th>
-                <th>Ghi chú</th>
+                <th>NgÃ y</th>
+                <th>Loáº¡i</th>
+                <th>Biáº¿n thá»ƒ</th>
+                <th className="text-right">Sá»‘ lÆ°á»£ng</th>
+                <th>Ghi chÃº</th>
               </tr>
             </thead>
             <tbody>
@@ -456,7 +460,7 @@ export default function Inventory() {
                   <td className={`text-right font-bold ${m.quantity > 0 ? "text-emerald-400" : "text-red-400"}`}>
                     {m.quantity > 0 ? "+" : ""}{m.quantity}
                   </td>
-                  <td className="text-xs text-gray-500">{m.note || "—"}</td>
+                  <td className="text-xs text-gray-500">{m.note || "â€”"}</td>
                 </tr>
               ))}
             </tbody>

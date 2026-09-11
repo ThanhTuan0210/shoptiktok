@@ -1,4 +1,4 @@
-﻿import { db } from "../db/database";
+import { db } from "../db/database";
 import { generateId, now } from "./helpers";
 import { subDays, format } from "date-fns";
 

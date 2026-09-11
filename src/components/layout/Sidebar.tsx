@@ -1,5 +1,5 @@
-﻿import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, Package, ShoppingCart, DollarSign,
   ChevronDown, ChevronRight, Settings, RotateCcw,
@@ -44,8 +44,13 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 overflow-y-auto">
+            {/* Navigation */}
+      <div className="px-3 pt-4 pb-2">
+        <Link to="/shop" target="_blank" className="flex items-center justify-center gap-2 w-full py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white rounded-lg font-bold text-sm shadow-lg shadow-rose-900/20 transition-all">
+          🛍️ Xem Website Bán Hàng
+        </Link>
+      </div>
+      <nav className="flex-1 px-3 py-2 overflow-y-auto">
         <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider px-3 mb-2">Tính năng chính</p>
         <ul className="space-y-1 mb-6">
           {mainNav.map(({ to, icon: Icon, label }) => (
