@@ -1,4 +1,4 @@
-﻿// =====================
+// =====================
 // ENUMS / TYPES
 // =====================
 
@@ -65,6 +65,7 @@ export interface Product {
   category: string;
   description?: string;
   imageUrl?: string;
+  additionalImages?: string[];
   costPrice: number;
   sellingPrice: number;
   lowStockThreshold: number;

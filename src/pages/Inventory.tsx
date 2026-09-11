@@ -37,8 +37,9 @@ export default function Inventory() {
   
   const [newProduct, setNewProduct] = useState({
     name: "", sku: "", category: CATEGORIES[0], costPrice: 0, sellingPrice: 0,
-    lowStockThreshold: 10, description: "",
+    lowStockThreshold: 10, description: "", imageUrl: "", additionalImages: ["", "", ""]
   });
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   
   const [newVariant, setNewVariant] = useState({ color: "", size: SIZES[2], stock: 0, sku: "" });
 
@@ -99,18 +100,65 @@ export default function Inventory() {
   const totalValue = products.reduce((s, p) => s + p.totalStock * p.costPrice, 0);
   const lowStockCount = products.filter(p => p.lowStock).length;
 
-  async function handleAddProduct() {
+  async function handleSaveProduct() {
     if (!newProduct.name || !newProduct.sku) return;
     setSaving(true);
-    const productId = generateId();
-    await db.products.add({
-      ...newProduct, id: productId, isActive: true,
-      createdAt: now(), updatedAt: now(),
-    });
+    
+    const cleanedAddImages = newProduct.additionalImages.filter(img => img.trim() !== "");
+    const prodData = {
+      name: newProduct.name,
+      sku: newProduct.sku,
+      category: newProduct.category,
+      costPrice: newProduct.costPrice,
+      sellingPrice: newProduct.sellingPrice,
+      lowStockThreshold: newProduct.lowStockThreshold,
+      description: newProduct.description,
+      imageUrl: newProduct.imageUrl || undefined,
+      additionalImages: cleanedAddImages
+    };
+
+    if (editingProductId) {
+      await db.products.update(editingProductId, {
+        ...prodData,
+        updatedAt: now()
+      });
+    } else {
+      await db.products.add({
+        ...prodData,
+        id: generateId(),
+        isActive: true,
+        createdAt: now(),
+        updatedAt: now()
+      });
+    }
+    
     setSaving(false);
     setShowAddProduct(false);
-    setNewProduct({ name: "", sku: "", category: CATEGORIES[0], costPrice: 0, sellingPrice: 0, lowStockThreshold: 10, description: "" });
+    setEditingProductId(null);
+    setNewProduct({ name: "", sku: "", category: CATEGORIES[0], costPrice: 0, sellingPrice: 0, lowStockThreshold: 10, description: "", imageUrl: "", additionalImages: ["", "", ""] });
     loadInventory();
+  }
+  
+  function openEditProduct(p) {
+    setEditingProductId(p.id);
+    setNewProduct({
+      name: p.name, sku: p.sku, category: p.category, 
+      costPrice: p.costPrice, sellingPrice: p.sellingPrice,
+      lowStockThreshold: p.lowStockThreshold, description: p.description || "",
+      imageUrl: p.imageUrl || "",
+      additionalImages: [
+        p.additionalImages?.[0] || "",
+        p.additionalImages?.[1] || "",
+        p.additionalImages?.[2] || ""
+      ]
+    });
+    setShowAddProduct(true);
+  }
+  
+  function openAddProduct() {
+    setEditingProductId(null);
+    setNewProduct({ name: "", sku: "", category: CATEGORIES[0], costPrice: 0, sellingPrice: 0, lowStockThreshold: 10, description: "", imageUrl: "", additionalImages: ["", "", ""] });
+    setShowAddProduct(true);
   }
 
   async function handleAddVariant() {
@@ -176,7 +224,7 @@ export default function Inventory() {
           <button onClick={() => setShowMovements(true)} className="btn-secondary hidden sm:flex">
             <TrendingUp size={16} /> Lá»‹ch sá»­ kho
           </button>
-          <button onClick={() => setShowAddProduct(true)} className="btn-primary">
+          <button onClick={openAddProduct} className="btn-primary">
             <Plus size={16} /> ThÃªm sáº£n pháº©m má»›i
           </button>
         </div>
@@ -265,6 +313,9 @@ export default function Inventory() {
                   </p>
                 </div>
                 <div className="shrink-0 text-gray-500 pl-2">
+                  <button onClick={(e) => { e.stopPropagation(); openEditProduct(product); }} className="text-gray-400 hover:text-white p-2">
+                    <Edit2 size={16} />
+                  </button>
                   {expandedProduct === product.id ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                 </div>
               </div>

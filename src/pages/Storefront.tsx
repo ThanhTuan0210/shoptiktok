@@ -285,14 +285,23 @@ export default function Storefront() {
             </button>
 
             {/* Image Side */}
-            <div className="w-full md:w-1/2 aspect-square md:aspect-auto md:h-full bg-gray-100 relative shrink-0">
-              <img src={selectedProduct.imageUrl} className="w-full h-full object-cover absolute inset-0" />
+            <div className="w-full md:w-1/2 aspect-square md:aspect-auto md:h-full bg-gray-100 relative shrink-0 flex overflow-x-auto snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {[selectedProduct.imageUrl, ...(selectedProduct.additionalImages || [])].filter(Boolean).map((img, idx, arr) => (
+                <div key={idx} className="w-full h-full shrink-0 snap-center relative" style={{ minWidth: '100%' }}>
+                  <img src={img} className="w-full h-full object-cover absolute inset-0" />
+                  {arr.length > 1 && (
+                    <div className="absolute bottom-4 right-4 bg-black/50 text-white text-[10px] px-2 py-1 rounded-full font-bold z-10">
+                      {idx + 1}/{arr.length}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
 
             {/* Info Side */}
             <div className="w-full md:w-1/2 p-5 md:p-8 flex flex-col overflow-y-auto relative">
               {/* Quick Admin Edit Link */}
-              <button onClick={() => navigate("/products")} className="absolute top-5 right-14 text-xs font-bold text-gray-400 hover:text-[#fe2c55] underline">Sửa sản phẩm này</button>
+              <button onClick={() => navigate("/inventory")} className="absolute top-5 right-14 text-xs font-bold text-gray-400 hover:text-[#fe2c55] underline">Sửa sản phẩm này</button>
 
               <div className="flex items-center gap-2 mb-2">
                 <span className="bg-[#fe2c55] text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase">Mall</span>
