@@ -1,0 +1,60 @@
+﻿@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #030712;
+    color: #f3f4f6;
+    font-family: "Inter", sans-serif;
+  }
+  * { box-sizing: border-box; }
+}
+
+@layer components {
+  .card { background-color: #111827; border-radius: 0.75rem; border: 1px solid #1f2937; padding: 1.5rem; }
+  .card-sm { background-color: #111827; border-radius: 0.75rem; border: 1px solid #1f2937; padding: 1rem; }
+  .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 500; font-size: 0.875rem; transition: all 0.2s; cursor: pointer; user-select: none; border: none; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background-color: #e11d48; color: #fff; }
+  .btn-primary:hover { background-color: #f43f5e; }
+  .btn-secondary { background-color: #1f2937; color: #d1d5db; border: 1px solid #374151; }
+  .btn-secondary:hover { background-color: #374151; }
+  .btn-success { background-color: #059669; color: #fff; }
+  .btn-success:hover { background-color: #10b981; }
+  .btn-danger { background-color: #b91c1c; color: #fff; }
+  .btn-danger:hover { background-color: #ef4444; }
+  .btn-warning { background-color: #d97706; color: #fff; }
+  .btn-warning:hover { background-color: #f59e0b; }
+  .input { width: 100%; padding: 0.5rem 0.75rem; background-color: #1f2937; border: 1px solid #374151; border-radius: 0.5rem; color: #f3f4f6; font-size: 0.875rem; transition: all 0.2s; outline: none; }
+  .input:focus { border-color: #e11d48; box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.2); }
+  .input::placeholder { color: #6b7280; }
+  .label { font-size: 0.875rem; font-weight: 500; color: #9ca3af; margin-bottom: 0.25rem; display: block; }
+  .badge { display: inline-flex; align-items: center; padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+  .badge-green { background-color: rgba(6,78,59,0.5); color: #34d399; border: 1px solid #065f46; }
+  .badge-red { background-color: rgba(127,29,29,0.5); color: #f87171; border: 1px solid #7f1d1d; }
+  .badge-yellow { background-color: rgba(120,53,15,0.5); color: #fbbf24; border: 1px solid #78350f; }
+  .badge-blue { background-color: rgba(30,58,138,0.5); color: #60a5fa; border: 1px solid #1e3a8a; }
+  .badge-purple { background-color: rgba(76,29,149,0.5); color: #c084fc; border: 1px solid #4c1d95; }
+  .badge-gray { background-color: #1f2937; color: #9ca3af; border: 1px solid #374151; }
+  .badge-orange { background-color: rgba(124,45,18,0.5); color: #fb923c; border: 1px solid #7c2d12; }
+  .table-container { overflow-x: auto; border-radius: 0.75rem; border: 1px solid #1f2937; }
+  .table { width: 100%; font-size: 0.875rem; border-collapse: collapse; }
+  .table th { padding: 0.75rem 1rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; background-color: rgba(31,41,55,0.5); border-bottom: 1px solid #1f2937; white-space: nowrap; }
+  .table td { padding: 0.75rem 1rem; color: #d1d5db; border-bottom: 1px solid rgba(31,41,55,0.5); }
+  .table tr:last-child td { border-bottom: none; }
+  .table tbody tr:hover { background-color: rgba(31,41,55,0.3); }
+  .page-header { margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+  .page-title { font-size: 1.5rem; font-weight: 700; color: #fff; }
+  .page-subtitle { color: #9ca3af; font-size: 0.875rem; margin-top: 0.25rem; }
+  .kpi-card { background-color: #111827; border-radius: 0.75rem; border: 1px solid #1f2937; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #111827; }
+::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 0.25s ease-out; }
