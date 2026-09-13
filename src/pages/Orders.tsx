@@ -646,39 +646,43 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                   <td>
                     <p className="font-medium text-white">{o.customerName}</p>
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                      <span className="text-xs text-gray-400 font-mono">{o.customerPhone || "—"}</span>
-                      {o.customerPhone && (
-                        <>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-gray-400 font-mono">{o.customerPhone || "—"}</span>
+                        {o.customerPhone && (
                           <a
                             href={`tel:${o.customerPhone}`}
-                            className="p-1 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded transition-colors"
+                            className="p-0.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded transition-colors"
                             title="Bấm để gọi điện"
                           >
                             <Phone size={11} />
                           </a>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {o.customerPhone && (
                           <a
                             href={`https://zalo.me/${cleanPhone}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-[10px] text-blue-400 hover:text-blue-300 hover:underline px-1 py-0.5 rounded bg-blue-500/10"
+                            className="text-[10px] text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 transition-colors"
                             title="Mở Zalo nhắn tin"
                           >
                             Zalo
                           </a>
-                        </>
-                      )}
-                      <a
-                        href={`https://seller-vn.tiktok.com/chat${o.tiktokOrderId ? `?order_id=${o.tiktokOrderId}` : ""}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[10px] text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 flex items-center gap-1 transition-colors"
-                        title="Mở chat TikTok Shop với khách"
-                      >
-                        <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
-                          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
-                        </svg>
-                        <span>TikTok</span>
-                      </a>
+                        )}
+                        <a
+                          href={`https://seller-vn.tiktok.com/chat${o.tiktokOrderId ? `?order_id=${o.tiktokOrderId}` : ""}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 flex items-center gap-1 transition-colors"
+                          title="Mở chat TikTok Shop với khách"
+                        >
+                          <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
+                            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
+                          </svg>
+                          <span>TikTok</span>
+                        </a>
+                      </div>
                     </div>
                   </td>
                   <td className="max-w-[190px]">
