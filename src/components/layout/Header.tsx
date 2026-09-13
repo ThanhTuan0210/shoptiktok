@@ -150,6 +150,30 @@ export default function Header() {
           )}
         </div>
 
+        
+        {/* Link to Storefront */}
+        <Link
+          to="/shop"
+          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition-colors"
+          title="Xem Cửa Hàng Bán Lẻ"
+        >
+          <Store size={14} className="text-[#fe2c55]" />
+          <span>Xem Shop</span>
+        </Link>
+
+        {/* Lock Admin Session */}
+        <button
+          onClick={() => {
+            if (window.confirm("Bạn có muốn khóa bảng quản trị ngay bây giờ không?")) {
+              lockAdmin();
+            }
+          }}
+          className="p-2 rounded-xl bg-gray-800/80 hover:bg-red-500/20 text-gray-400 hover:text-red-400 border border-gray-700 transition-colors"
+          title="Khóa Bảng Quản Trị"
+        >
+          <Lock size={15} />
+        </button>
+    
         {/* User Profile */}
         <div className="flex items-center gap-2.5 bg-gray-800/80 border border-gray-700 rounded-xl px-3 py-1.5 hover:bg-gray-700/80 transition-colors">
           <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #f43f5e, #e879a0)" }}>

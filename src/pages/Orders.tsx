@@ -1,9 +1,10 @@
+import PrintShippingModal from "../components/ui/PrintShippingModal";
 import { useEffect, useState, useMemo } from "react";
 import { db } from "../db/database";
 import type { Order, OrderStatus } from "../types";
 import {
   Plus, Download, Upload, Search, X,
-  Eye, Edit2, Trash2, Package, CheckCircle2
+  Eye, Edit2, Trash2, Package, CheckCircle2, Printer, CheckSquare, Square, Truck
 } from "lucide-react";
 import Modal from "../components/ui/Modal";
 import SearchInput from "../components/ui/SearchInput";
@@ -48,10 +49,36 @@ export default function Orders() {
   const [editOrder, setEditOrder] = useState<Partial<Order>>(emptyOrder);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [printOrders, setPrintOrders] = useState<Order[]>([]);
   const [page, setPage] = useState(1);
   const PER_PAGE = 20;
 
   useEffect(() => { loadOrders(); }, []);
+
+  
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedIds(paginated.map(o => o.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleBulkStatus = async (status: OrderStatus) => {
+    if (selectedIds.length === 0) return;
+    setSaving(true);
+    for (const id of selectedIds) {
+      await db.orders.update(id, { status, updatedAt: now() });
+    }
+    await loadOrders();
+    setSelectedIds([]);
+    setSaving(false);
+  };
 
   async function loadOrders() {
     setLoading(true);
@@ -284,6 +311,49 @@ export default function Orders() {
         )}
       </div>
 
+            {/* Bulk Actions Floating Bar */}
+      {selectedIds.length > 0 && (
+        <div className="bg-rose-950/70 border border-rose-800/80 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 animate-fade-in shadow-xl backdrop-blur-sm">
+          <div className="flex items-center gap-2.5">
+            <span className="w-6 h-6 rounded-full bg-[#fe2c55] text-white font-bold text-xs flex items-center justify-center">
+              {selectedIds.length}
+            </span>
+            <span className="text-sm font-semibold text-white">
+              Đơn hàng đã chọn
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => handleBulkStatus("processing")}
+              className="btn bg-blue-600 hover:bg-blue-500 text-white text-xs py-1.5 px-3"
+            >
+              <Package size={14} /> Duyệt đơn ({selectedIds.length})
+            </button>
+            <button
+              onClick={() => handleBulkStatus("shipping")}
+              className="btn bg-purple-600 hover:bg-purple-500 text-white text-xs py-1.5 px-3"
+            >
+              <Truck size={14} /> Chuyển sang Giao hàng ({selectedIds.length})
+            </button>
+            <button
+              onClick={() => {
+                const toPrint = orders.filter(o => selectedIds.includes(o.id));
+                setPrintOrders(toPrint);
+              }}
+              className="btn bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-1.5 px-3"
+            >
+              <Printer size={14} /> In {selectedIds.length} vận đơn A6
+            </button>
+            <button
+              onClick={() => setSelectedIds([])}
+              className="text-xs text-gray-400 hover:text-white px-2 py-1 transition-colors"
+            >
+              Hủy chọn
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="table-container">
         <table className="table">
@@ -435,8 +505,24 @@ export default function Orders() {
               </div>
             </div>
             {showDetail.note && <div className="bg-gray-800/60 rounded-lg p-3 text-xs text-gray-300">Ghi chú: {showDetail.note}</div>}
+            <div className="flex justify-end pt-3 border-t border-gray-800">
+              <button
+                onClick={() => setPrintOrders([showDetail])}
+                className="btn bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 px-4 flex items-center gap-1.5 shadow-md"
+              >
+                <Printer size={15} /> In Phiếu Giao Hàng A6
+              </button>
+            </div>
           </div>
         </Modal>
+      )}
+
+      {/* Shipping Label Print Modal */}
+      {printOrders.length > 0 && (
+        <PrintShippingModal
+          orders={printOrders}
+          onClose={() => setPrintOrders([])}
+        />
       )}
 
       {/* Add / Edit Modal */}

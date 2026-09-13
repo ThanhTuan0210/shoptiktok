@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { db } from "../db/database";
 import type { AppSettings } from "../types";
-import { Settings as SettingsIcon, Save, Download, Upload, Trash2, Database, ShieldCheck, Banknote } from "lucide-react";
+import { Settings as SettingsIcon, Save, Lock, Download, Upload, Trash2, Database, ShieldCheck, Banknote } from "lucide-react";
 import { exportDatabaseBackup } from "../utils/exportData";
 
 const defaultSettings: AppSettings = {
@@ -24,6 +24,8 @@ export default function Settings() {
   const [bankAccount, setBankAccount] = useState(localStorage.getItem("tt_bankAccount") || "1234567890");
   const [bankOwner, setBankOwner] = useState(localStorage.getItem("tt_bankOwner") || "NGUYEN VAN A");
   const [shopPhone, setShopPhone] = useState(localStorage.getItem("tt_shopPhone") || "0988 234 567");
+  const [adminPin, setAdminPin] = useState(localStorage.getItem("tt_adminPin") || "1234");
+  const [zaloPhone, setZaloPhone] = useState(localStorage.getItem("tt_zaloPhone") || "0988 234 567");
 
   useEffect(() => { loadSettings(); loadStats(); }, []);
 
@@ -144,6 +146,40 @@ export default function Settings() {
             <label className="label">Ngưỡng cảnh báo hết hàng (bộ)</label>
             <input type="number" className="input" value={settings.lowStockDefault} onChange={e => setSettings(p => ({ ...p, lowStockDefault: Number(e.target.value) }))} />
             <p className="text-xs text-gray-500 mt-1">Hệ thống sẽ báo động khi tồn kho ≤ số này</p>
+          </div>
+        </div>
+      </div>
+
+            {/* Admin Security Settings */}
+      <div className="card space-y-4">
+        <h2 className="text-base font-semibold text-white flex items-center gap-2">
+          <Lock size={18} className="text-amber-400" /> Bảo Mật & Mã PIN Quản Trị
+        </h2>
+        <p className="text-xs text-gray-400">
+          Mã PIN 4 số bảo vệ toàn bộ khu vực quản trị và dữ liệu kinh doanh (Doanh thu, Đơn hàng, Kho). Khách mua hàng chỉ xem được trang /shop.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="label">Mã PIN Quản trị (4 chữ số)</label>
+            <input
+              type="password"
+              maxLength={4}
+              className="input font-mono tracking-widest text-base"
+              value={adminPin}
+              onChange={e => setAdminPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              placeholder="VD: 1234"
+            />
+            <p className="text-xs text-gray-500 mt-1">Mặc định ban đầu: <strong>1234</strong></p>
+          </div>
+          <div>
+            <label className="label">Số Zalo CSKH tư vấn</label>
+            <input
+              className="input"
+              value={zaloPhone}
+              onChange={e => setZaloPhone(e.target.value)}
+              placeholder="VD: 0988 234 567"
+            />
+            <p className="text-xs text-gray-500 mt-1">Hiển thị ở nút bong bóng chat Zalo trang mua hàng</p>
           </div>
         </div>
       </div>
