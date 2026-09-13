@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { db } from "../db/database";
 import type { Product, ProductVariant, Order } from "../types";
 import {
@@ -48,6 +48,20 @@ function getRating(id: string) {
 }
 function copyText(text: string) { navigator.clipboard?.writeText(text).catch(() => {}); }
 
+function cleanStorage(key: string, fallback: string): string {
+  try {
+    const val = localStorage.getItem(key);
+    // Detect corrupted double-encoded UTF-8 strings in browser storage
+    if (!val || /[\u00C3\u00C2\u00E1\u00C4][\x80-\xbf]/.test(val) || val.includes("S\u00e1\u00ba\u00acP") || val.includes("Mi\u00e1\u00bb")) {
+      localStorage.setItem(key, fallback);
+      return fallback;
+    }
+    return val;
+  } catch {
+    return fallback;
+  }
+}
+
 export default function Storefront() {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
@@ -70,17 +84,17 @@ export default function Storefront() {
   const [copied, setCopied] = useState(false);
 
   // Shop settings
-  const [shopName, setShopName] = useState(localStorage.getItem("tt_shopName") || "Henr.Studio");
-  const [shopPhone, setShopPhone] = useState(localStorage.getItem("tt_shopPhone") || "0988 234 567");
-  const [bannerTitle, setBannerTitle] = useState(localStorage.getItem("tt_bannerTitle") || "SALE Sáº¬P SÃ€N");
-  const [bannerSub, setBannerSub] = useState(localStorage.getItem("tt_bannerSub") || "Miá»…n phÃ­ váº­n chuyá»ƒn toÃ n quá»‘c");
-  const [bankName, setBankName] = useState(localStorage.getItem("tt_bankName") || "Vietcombank");
-  const [bankAccount, setBankAccount] = useState(localStorage.getItem("tt_bankAccount") || "1234567890");
-  const [bankOwner, setBankOwner] = useState(localStorage.getItem("tt_bankOwner") || "NGUYEN VAN A");
+  const [shopName, setShopName] = useState(() => cleanStorage("tt_shopName", "Henr.Studio"));
+  const [shopPhone, setShopPhone] = useState(() => cleanStorage("tt_shopPhone", "0988 234 567"));
+  const [bannerTitle, setBannerTitle] = useState(() => cleanStorage("tt_bannerTitle", "SALE SẬP SÀN"));
+  const [bannerSub, setBannerSub] = useState(() => cleanStorage("tt_bannerSub", "Miễn phí vận chuyển toàn quốc"));
+  const [bankName, setBankName] = useState(() => cleanStorage("tt_bankName", "Vietcombank"));
+  const [bankAccount, setBankAccount] = useState(() => cleanStorage("tt_bankAccount", "1234567890"));
+  const [bankOwner, setBankOwner] = useState(() => cleanStorage("tt_bankOwner", "NGUYEN VAN A"));
   const [isAdminOpen, setIsAdminOpen] = useState(false);
 
   useEffect(() => {
-    document.title = `${shopName} | Cá»­a HÃ ng Äá»“ Ngá»§ & Pyjama`;
+    document.title = `${shopName} | Cửa Hàng Đồ Ngủ & Pyjama`;
     Promise.all([
       db.products.filter(p => p.isActive).toArray(),
       db.productVariants.toArray(),
@@ -164,7 +178,7 @@ export default function Storefront() {
       total: cartTotal,
       shippingCarrier: "GHTK",
       trackingNumber: "",
-      note: `Äáº·t qua Website | Thanh toÃ¡n: ${paymentMethod === "cod" ? "COD khi nháº­n" : "Chuyá»ƒn khoáº£n"}`,
+      note: `Đặt qua Website | Thanh toán: ${paymentMethod === "cod" ? "COD khi nhận" : "Chuyển khoản"}`,
       tiktokFeeRate: 0,
       tiktokFeeAmount: 0,
       paymentMethod,
@@ -191,7 +205,7 @@ export default function Storefront() {
         variantId: item.variantId,
         type: "sale",
         quantity: -item.qty,
-        note: "ÄÆ¡n Web " + orderId,
+        note: "Đơn Web " + orderId,
         date: today(),
         createdAt: now(),
       });
@@ -225,9 +239,9 @@ export default function Storefront() {
 
       {/* Admin Floating Button */}
       <button onClick={() => setIsAdminOpen(true)}
-        className="fixed bottom-6 left-6 z-40 bg-gray-900 text-white p-3 rounded-full shadow-xl hover:bg-black transition-all group flex items-center" title="CÃ i Ä‘áº·t Shop">
+        className="fixed bottom-6 left-6 z-40 bg-gray-900 text-white p-3 rounded-full shadow-xl hover:bg-black transition-all group flex items-center" title="Cài đặt Shop">
         <Settings size={22} />
-        <span className="w-0 overflow-hidden whitespace-nowrap group-hover:w-24 group-hover:ml-2 transition-all duration-300 text-sm font-medium">Sá»­a Shop</span>
+        <span className="w-0 overflow-hidden whitespace-nowrap group-hover:w-24 group-hover:ml-2 transition-all duration-300 text-sm font-medium">Sửa Shop</span>
       </button>
 
       {/* Admin Modal */}
@@ -235,51 +249,51 @@ export default function Storefront() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setIsAdminOpen(false)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Settings className="text-[#fe2c55]" size={20}/> CÃ i Ä‘áº·t Shop</h2>
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Settings className="text-[#fe2c55]" size={20}/> Cài đặt Shop</h2>
               <button onClick={() => setIsAdminOpen(false)} className="p-1 hover:bg-gray-100 rounded-full"><X size={20} className="text-gray-500"/></button>
             </div>
             <form onSubmit={saveSettings} className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">TÃªn cá»­a hÃ ng</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Tên cửa hàng</label>
                 <input required value={shopName} onChange={e => setShopName(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:border-[#fe2c55] outline-none"/>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Hotline / Zalo há»— trá»£</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Hotline / Zalo hỗ trợ</label>
                 <input required value={shopPhone} onChange={e => setShopPhone(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:border-[#fe2c55] outline-none"/>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">TiÃªu Ä‘á» Banner</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Tiêu đề Banner</label>
                 <input required value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:border-[#fe2c55] outline-none"/>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">MÃ´ táº£ Banner</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Mô tả Banner</label>
                 <input required value={bannerSub} onChange={e => setBannerSub(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:border-[#fe2c55] outline-none"/>
               </div>
               <hr className="border-gray-100"/>
-              <p className="text-xs font-bold text-gray-400 uppercase">TÃ i khoáº£n ngÃ¢n hÃ ng nháº­n tiá»n</p>
+              <p className="text-xs font-bold text-gray-400 uppercase">Tài khoản ngân hàng nhận tiền</p>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">NgÃ¢n hÃ ng</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Ngân hàng</label>
                 <select value={bankName} onChange={e => setBankName(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:border-[#fe2c55] outline-none">
                   {Object.keys(BANK_CODES).map(b => <option key={b}>{b}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Sá»‘ tÃ i khoáº£n</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Số tài khoản</label>
                 <input required value={bankAccount} onChange={e => setBankAccount(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:border-[#fe2c55] outline-none" placeholder="VD: 1234567890"/>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">TÃªn chá»§ tÃ i khoáº£n</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Tên chủ tài khoản</label>
                 <input required value={bankOwner} onChange={e => setBankOwner(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:border-[#fe2c55] outline-none" placeholder="VD: NGUYEN VAN A"/>
               </div>
-              <button type="submit" className="w-full bg-[#fe2c55] text-white font-bold py-3 rounded-xl hover:bg-[#e62045] transition-colors">LÆ°u thay Ä‘á»•i</button>
+              <button type="submit" className="w-full bg-[#fe2c55] text-white font-bold py-3 rounded-xl hover:bg-[#e62045] transition-colors">Lưu thay đổi</button>
             </form>
             <div className="border-t border-gray-100 mt-5 pt-4">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Quáº£n trá»‹ viÃªn</p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Quản trị viên</p>
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => navigate("/dashboard")} className="flex items-center justify-center gap-2 bg-gray-900 text-white font-bold py-2.5 rounded-xl hover:bg-black transition-colors text-sm">ðŸ“Š Dashboard</button>
-                <button onClick={() => navigate("/inventory")} className="flex items-center justify-center gap-2 bg-gray-100 text-gray-800 font-bold py-2.5 rounded-xl hover:bg-gray-200 transition-colors text-sm">ðŸ“¦ Quáº£n lÃ½ Kho</button>
-                <button onClick={() => navigate("/orders")} className="flex items-center justify-center gap-2 bg-gray-100 text-gray-800 font-bold py-2.5 rounded-xl hover:bg-gray-200 transition-colors text-sm">ðŸ§¾ ÄÆ¡n hÃ ng</button>
-                <button onClick={() => navigate("/finance")} className="flex items-center justify-center gap-2 bg-gray-100 text-gray-800 font-bold py-2.5 rounded-xl hover:bg-gray-200 transition-colors text-sm">ðŸ’° TÃ i chÃ­nh</button>
+                <button onClick={() => navigate("/dashboard")} className="flex items-center justify-center gap-2 bg-gray-900 text-white font-bold py-2.5 rounded-xl hover:bg-black transition-colors text-sm">📊 Dashboard</button>
+                <button onClick={() => navigate("/inventory")} className="flex items-center justify-center gap-2 bg-gray-100 text-gray-800 font-bold py-2.5 rounded-xl hover:bg-gray-200 transition-colors text-sm">📦 Quản lý Kho</button>
+                <button onClick={() => navigate("/orders")} className="flex items-center justify-center gap-2 bg-gray-100 text-gray-800 font-bold py-2.5 rounded-xl hover:bg-gray-200 transition-colors text-sm">🧾 Đơn hàng</button>
+                <button onClick={() => navigate("/finance")} className="flex items-center justify-center gap-2 bg-gray-100 text-gray-800 font-bold py-2.5 rounded-xl hover:bg-gray-200 transition-colors text-sm">💰 Tài chính</button>
               </div>
             </div>
           </div>
@@ -295,19 +309,19 @@ export default function Storefront() {
           </div>
           <div className="flex-1 max-w-2xl bg-[#f1f1f1] h-10 rounded-full flex items-center px-4 border border-transparent focus-within:border-[#fe2c55] focus-within:bg-white transition-colors">
             <Search size={16} className="text-gray-400 shrink-0"/>
-            <input type="text" placeholder="TÃ¬m kiáº¿m sáº£n pháº©m theo tÃªn, danh má»¥c..." value={search} onChange={e => setSearch(e.target.value)} className="bg-transparent border-none outline-none w-full text-sm text-gray-900 placeholder-gray-500 ml-2"/>
+            <input type="text" placeholder="Tìm kiếm sản phẩm theo tên, danh mục..." value={search} onChange={e => setSearch(e.target.value)} className="bg-transparent border-none outline-none w-full text-sm text-gray-900 placeholder-gray-500 ml-2"/>
             {search && <button onClick={() => setSearch("")} className="shrink-0 text-gray-400 hover:text-gray-600"><X size={14}/></button>}
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => navigate("/track")} className="hidden md:flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-[#fe2c55] transition-colors px-3 py-2 rounded-lg hover:bg-gray-100">
-              <Search size={15}/> Tra cá»©u Ä‘Æ¡n
+              <Search size={15}/> Tra cứu đơn
             </button>
             <button onClick={() => { setIsCheckoutOpen(true); setCheckoutStep("cart"); }} className="relative p-2 shrink-0 flex items-center gap-2 text-gray-900 hover:text-[#fe2c55] transition-colors">
               <div className="relative">
                 <ShoppingCart size={24}/>
                 {cartCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-[#fe2c55] text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full font-bold">{cartCount}</span>}
               </div>
-              <span className="hidden md:block font-medium">Giá» hÃ ng</span>
+              <span className="hidden md:block font-medium">Giỏ hàng</span>
             </button>
           </div>
         </div>
@@ -318,7 +332,7 @@ export default function Storefront() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="md:col-span-2 h-48 md:h-64 rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 relative overflow-hidden shadow-sm flex items-center p-8">
             <div className="relative z-10 text-white">
-              <span className="bg-black/30 px-2 py-1 rounded text-xs font-bold uppercase tracking-wider mb-2 inline-block">ChÆ°Æ¡ng trÃ¬nh Ä‘áº·c biá»‡t</span>
+              <span className="bg-black/30 px-2 py-1 rounded text-xs font-bold uppercase tracking-wider mb-2 inline-block">Chương trình đặc biệt</span>
               <h2 className="font-extrabold text-3xl md:text-5xl italic mb-2">{bannerTitle}</h2>
               <p className="text-lg opacity-90">{bannerSub}</p>
             </div>
@@ -326,21 +340,21 @@ export default function Storefront() {
           <div className="hidden md:flex flex-col gap-4">
             <div className="flex-1 rounded-2xl bg-white p-4 shadow-sm border border-red-100 flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-red-50 text-[#fe2c55] flex items-center justify-center shrink-0"><Zap size={24}/></div>
-              <div><h3 className="font-bold text-gray-900">Flash Sale</h3><p className="text-sm text-gray-600">Æ¯u Ä‘Ã£i hÃ ng ngÃ y tá»« {shopName}</p></div>
+              <div><h3 className="font-bold text-gray-900">Flash Sale</h3><p className="text-sm text-gray-600">Ưu đãi hàng ngày từ {shopName}</p></div>
             </div>
             <div className="flex-1 rounded-2xl bg-white p-4 shadow-sm border border-red-100 flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-green-50 text-green-500 flex items-center justify-center shrink-0"><ShieldCheck size={24}/></div>
-              <div><h3 className="font-bold text-gray-900">HÃ ng ChÃ­nh HÃ£ng</h3><p className="text-sm text-gray-600">Cam káº¿t cháº¥t lÆ°á»£ng 100%</p></div>
+              <div><h3 className="font-bold text-gray-900">Hàng Chính Hãng</h3><p className="text-sm text-gray-600">Cam kết chất lượng 100%</p></div>
             </div>
           </div>
         </div>
 
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-gray-900">
-            {search ? `Káº¿t quáº£ cho "${search}" (${filteredProducts.length})` : "Gá»£i Ã½ hÃ´m nay"}
+            {search ? `Kết quả cho "${search}" (${filteredProducts.length})` : "Gợi ý hôm nay"}
           </h2>
           <button onClick={() => navigate("/track")} className="md:hidden text-xs font-bold text-[#fe2c55] flex items-center gap-1">
-            <Search size={12}/> Tra cá»©u Ä‘Æ¡n
+            <Search size={12}/> Tra cứu đơn
           </button>
         </div>
 
@@ -348,8 +362,8 @@ export default function Storefront() {
         {filteredProducts.length === 0 ? (
           <div className="text-center py-20 text-gray-500">
             <Search size={48} className="mx-auto mb-4 text-gray-300"/>
-            <p className="font-medium">KhÃ´ng tÃ¬m tháº¥y "{search}"</p>
-            <button onClick={() => setSearch("")} className="mt-3 text-[#fe2c55] font-bold text-sm hover:underline">Xem táº¥t cáº£</button>
+            <p className="font-medium">Không tìm thấy "{search}"</p>
+            <button onClick={() => setSearch("")} className="mt-3 text-[#fe2c55] font-bold text-sm hover:underline">Xem tất cả</button>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
@@ -366,7 +380,7 @@ export default function Storefront() {
                     <div className="absolute top-0 left-0 bg-[#fe2c55] text-white text-[10px] font-bold px-2 py-1 rounded-br-lg">Mall</div>
                     {stats.totalStock === 0 && (
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                        <span className="bg-white text-gray-700 font-bold text-xs px-3 py-1 rounded-full">Háº¿t hÃ ng</span>
+                        <span className="bg-white text-gray-700 font-bold text-xs px-3 py-1 rounded-full">Hết hàng</span>
                       </div>
                     )}
                   </div>
@@ -381,7 +395,7 @@ export default function Storefront() {
                       <div className="flex items-center gap-1 mt-0.5">
                         <Star size={9} className="text-amber-400 fill-amber-400"/>
                         <span className="text-[10px] text-gray-500">{rating.toFixed(1)}</span>
-                        {stats.totalSold > 0 && <span className="text-[10px] text-gray-400 ml-1">ÄÃ£ bÃ¡n {formatSold(stats.totalSold)}</span>}
+                        {stats.totalSold > 0 && <span className="text-[10px] text-gray-400 ml-1">Đã bán {formatSold(stats.totalSold)}</span>}
                       </div>
                     </div>
                   </div>
@@ -430,30 +444,30 @@ export default function Storefront() {
                   <span className="ml-1 font-bold text-gray-900">{getRating(selectedProduct.id).toFixed(1)}</span>
                 </div>
                 <span className="text-gray-300">|</span>
-                {selStats && selStats.totalSold > 0 && <><span>ÄÃ£ bÃ¡n <strong>{formatSold(selStats.totalSold)}</strong></span><span className="text-gray-300">|</span></>}
+                {selStats && selStats.totalSold > 0 && <><span>Đã bán <strong>{formatSold(selStats.totalSold)}</strong></span><span className="text-gray-300">|</span></>}
                 <span className={selStats && selStats.totalStock > 0 ? "text-green-600 font-medium":"text-red-500 font-medium"}>
-                  {selStats && selStats.totalStock > 0 ? `CÃ²n hÃ ng (${selStats.totalStock})` : "Táº¡m háº¿t hÃ ng"}
+                  {selStats && selStats.totalStock > 0 ? `Còn hàng (${selStats.totalStock})` : "Tạm hết hàng"}
                 </span>
               </div>
               <div className="text-3xl font-bold text-[#fe2c55] mb-5">{formatCurrency(selectedProduct.sellingPrice)}</div>
               <div className="mb-6 flex-1">
-                <p className="text-sm font-bold text-gray-900 mb-3">Chá»n phÃ¢n loáº¡i:</p>
+                <p className="text-sm font-bold text-gray-900 mb-3">Chọn phân loại:</p>
                 <div className="flex flex-wrap gap-2">
                   {selVariants.map(v => (
                     <button key={v.id} onClick={() => v.stock > 0 && setSelectedVariant(v)} disabled={v.stock===0}
                       className={`px-4 py-2 text-sm rounded-lg border transition-all ${v.stock===0?'border-gray-100 text-gray-300 bg-gray-50 cursor-not-allowed line-through':selectedVariant?.id===v.id?'border-[#fe2c55] text-[#fe2c55] bg-red-50 font-bold ring-1 ring-[#fe2c55]':'border-gray-200 text-gray-700 hover:border-[#fe2c55]'}`}>
-                      {v.color} - {v.size}{v.stock===0&&<span className="ml-1 text-[10px]">(háº¿t)</span>}
+                      {v.color} - {v.size}{v.stock===0&&<span className="ml-1 text-[10px]">(hết)</span>}
                     </button>
                   ))}
                 </div>
                 {!selectedVariant && selVariants.filter(v=>v.stock>0).length > 0 && (
-                  <p className="text-xs text-amber-600 mt-2 font-medium">âš ï¸ Vui lÃ²ng chá»n phÃ¢n loáº¡i trÆ°á»›c khi mua</p>
+                  <p className="text-xs text-amber-600 mt-2 font-medium">⚠️ Vui lòng chọn phân loại trước khi mua</p>
                 )}
               </div>
               <div className="flex gap-3">
                 <button onClick={() => { if(selectedVariant) addToCart(selectedProduct, selectedVariant); }} disabled={!selectedVariant}
                   className="flex-1 bg-[#ffecd8] hover:bg-[#ffe0c2] text-[#ff8000] font-bold py-3.5 rounded-xl transition-colors disabled:opacity-40">
-                  ThÃªm vÃ o giá»
+                  Thêm vào giỏ
                 </button>
                 <button onClick={() => { if(selectedVariant){ addToCart(selectedProduct, selectedVariant); setSelectedProduct(null); setIsCheckoutOpen(true); setCheckoutStep("cart"); } }} disabled={!selectedVariant}
                   className="flex-1 bg-[#fe2c55] hover:bg-[#e62045] text-white font-bold py-3.5 rounded-xl shadow-lg shadow-red-200 transition-colors disabled:opacity-40">
@@ -474,12 +488,12 @@ export default function Storefront() {
             <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
               {checkoutStep === "payment" ? (
                 <button onClick={() => setCheckoutStep("cart")} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium text-sm">
-                  <ChevronLeft size={18}/> Quay láº¡i giá» hÃ ng
+                  <ChevronLeft size={18}/> Quay lại giỏ hàng
                 </button>
               ) : (
                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                   <ShoppingCart size={20}/>
-                  Giá» hÃ ng {cartCount > 0 && <span className="bg-[#fe2c55] text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">{cartCount}</span>}
+                  Giỏ hàng {cartCount > 0 && <span className="bg-[#fe2c55] text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">{cartCount}</span>}
                 </h2>
               )}
               {checkoutStep !== "success" && (
@@ -490,7 +504,7 @@ export default function Storefront() {
             {/* Step indicator */}
             {checkoutStep !== "success" && (
               <div className="flex px-4 py-3 gap-2 border-b border-gray-100 shrink-0">
-                {[["cart","1. Giá» hÃ ng & Äá»‹a chá»‰"],["payment","2. Chá»n thanh toÃ¡n"]].map(([step, label]) => (
+                {[["cart","1. Giỏ hàng & Địa chỉ"],["payment","2. Chọn thanh toán"]].map(([step, label]) => (
                   <div key={step} className={`flex-1 text-center text-xs font-bold py-1.5 rounded-lg ${checkoutStep===step?'bg-[#fe2c55] text-white':'bg-gray-100 text-gray-400'}`}>{label}</div>
                 ))}
               </div>
@@ -505,8 +519,8 @@ export default function Storefront() {
                   {cart.length === 0 ? (
                     <div className="text-center py-20">
                       <ShoppingCart size={48} className="mx-auto text-gray-300 mb-4"/>
-                      <p className="text-gray-500 font-medium">Giá» hÃ ng Ä‘ang trá»‘ng</p>
-                      <button onClick={() => setIsCheckoutOpen(false)} className="mt-3 text-[#fe2c55] font-bold text-sm hover:underline">Tiáº¿p tá»¥c mua sáº¯m</button>
+                      <p className="text-gray-500 font-medium">Giỏ hàng đang trống</p>
+                      <button onClick={() => setIsCheckoutOpen(false)} className="mt-3 text-[#fe2c55] font-bold text-sm hover:underline">Tiếp tục mua sắm</button>
                     </div>
                   ) : (
                     <>
@@ -538,22 +552,22 @@ export default function Storefront() {
                       </div>
 
                       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <h3 className="font-bold text-gray-900 text-sm mb-3">ðŸ“¦ ThÃ´ng tin giao hÃ ng</h3>
+                        <h3 className="font-bold text-gray-900 text-sm mb-3">📦 Thông tin giao hàng</h3>
                         <div className="space-y-3">
                           <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1">Há» vÃ  tÃªn ngÆ°á»i nháº­n *</label>
-                            <input className="w-full text-sm text-gray-900 placeholder-gray-400 px-3.5 py-2.5 border border-gray-200 focus:border-[#fe2c55] rounded-lg outline-none" placeholder="VD: Nguyá»…n VÄƒn Nam" value={checkoutForm.name} onChange={e => setCheckoutForm(p=>({...p,name:e.target.value}))}/>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Họ và tên người nhận *</label>
+                            <input className="w-full text-sm text-gray-900 placeholder-gray-400 px-3.5 py-2.5 border border-gray-200 focus:border-[#fe2c55] rounded-lg outline-none" placeholder="VD: Nguyễn Văn Nam" value={checkoutForm.name} onChange={e => setCheckoutForm(p=>({...p,name:e.target.value}))}/>
                           </div>
                           <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1">Sá»‘ Ä‘iá»‡n thoáº¡i nháº­n hÃ ng *</label>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Số điện thoại nhận hàng *</label>
                             <input type="tel" className="w-full text-sm text-gray-900 placeholder-gray-400 px-3.5 py-2.5 border border-gray-200 focus:border-[#fe2c55] rounded-lg outline-none" placeholder="VD: 0912 345 678" value={checkoutForm.phone} onChange={e => setCheckoutForm(p=>({...p,phone:e.target.value}))}/>
                             {checkoutForm.phone && !isValidPhone(checkoutForm.phone) && (
-                              <p className="text-[11px] text-amber-600 mt-1">âš ï¸ Vui lÃ²ng nháº­p Ä‘Ãºng sá»‘ Ä‘iá»‡n thoáº¡i (9-11 chá»¯ sá»‘)</p>
+                              <p className="text-[11px] text-amber-600 mt-1">⚠️ Vui lòng nhập đúng số điện thoại (9-11 chữ số)</p>
                             )}
                           </div>
                           <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1">Äá»‹a chá»‰ giao hÃ ng Ä‘áº§y Ä‘á»§ *</label>
-                            <textarea className="w-full text-sm text-gray-900 placeholder-gray-400 px-3.5 py-2.5 border border-gray-200 focus:border-[#fe2c55] rounded-lg outline-none resize-none h-20" placeholder="Sá»‘ nhÃ , tÃªn Ä‘Æ°á»ng, phÆ°á»ng/xÃ£, quáº­n/huyá»‡n, tá»‰nh/thÃ nh..." value={checkoutForm.address} onChange={e => setCheckoutForm(p=>({...p,address:e.target.value}))}/>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Địa chỉ giao hàng đầy đủ *</label>
+                            <textarea className="w-full text-sm text-gray-900 placeholder-gray-400 px-3.5 py-2.5 border border-gray-200 focus:border-[#fe2c55] rounded-lg outline-none resize-none h-20" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành..." value={checkoutForm.address} onChange={e => setCheckoutForm(p=>({...p,address:e.target.value}))}/>
                           </div>
                         </div>
                       </div>
@@ -566,27 +580,27 @@ export default function Storefront() {
               {checkoutStep === "payment" && (
                 <>
                   <div className="bg-white rounded-xl border border-gray-200 p-4">
-                    <p className="text-xs font-bold text-gray-400 uppercase mb-2">TÃ³m táº¯t Ä‘Æ¡n hÃ ng</p>
+                    <p className="text-xs font-bold text-gray-400 uppercase mb-2">Tóm tắt đơn hàng</p>
                     {cart.map((item,i) => (
                       <div key={i} className="flex justify-between text-xs text-gray-600 mb-1">
-                        <span className="truncate mr-2">{item.product.name} ({item.variant.color} - {item.variant.size}) Ã—{item.qty}</span>
+                        <span className="truncate mr-2">{item.product.name} ({item.variant.color} - {item.variant.size}) ×{item.qty}</span>
                         <span className="shrink-0 font-medium">{formatCurrency(item.product.sellingPrice * item.qty)}</span>
                       </div>
                     ))}
                     <div className="border-t border-gray-100 mt-2 pt-2 flex justify-between font-bold text-sm">
-                      <span>Tá»•ng thanh toÃ¡n</span><span className="text-[#fe2c55]">{formatCurrency(cartTotal)}</span>
+                      <span>Tổng thanh toán</span><span className="text-[#fe2c55]">{formatCurrency(cartTotal)}</span>
                     </div>
                   </div>
 
                   <div className="bg-white rounded-xl border border-gray-200 p-4">
-                    <p className="text-sm font-bold text-gray-900 mb-3">ðŸ’³ Chá»n phÆ°Æ¡ng thá»©c thanh toÃ¡n</p>
+                    <p className="text-sm font-bold text-gray-900 mb-3">💳 Chọn phương thức thanh toán</p>
                     <div className="space-y-3">
                       <button onClick={() => setPaymentMethod("cod")}
                         className={`w-full flex items-center gap-3.5 p-3.5 rounded-xl border-2 transition-all text-left ${paymentMethod==="cod"?'border-[#fe2c55] bg-red-50/50':'border-gray-200 hover:border-gray-300'}`}>
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${paymentMethod==="cod"?'bg-[#fe2c55] text-white':'bg-gray-100 text-gray-500'}`}><Truck size={20}/></div>
                         <div className="flex-1">
-                          <p className="font-bold text-gray-900 text-sm">Thanh toÃ¡n khi nháº­n hÃ ng (COD)</p>
-                          <p className="text-xs text-gray-500 mt-0.5">Thanh toÃ¡n tiá»n máº·t trá»±c tiáº¿p cho shipper khi nháº­n bÆ°u kiá»‡n</p>
+                          <p className="font-bold text-gray-900 text-sm">Thanh toán khi nhận hàng (COD)</p>
+                          <p className="text-xs text-gray-500 mt-0.5">Thanh toán tiền mặt trực tiếp cho shipper khi nhận bưu kiện</p>
                         </div>
                         <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${paymentMethod==="cod"?'border-[#fe2c55] bg-[#fe2c55]':'border-gray-300'}`}>
                           {paymentMethod==="cod" && <div className="w-2 h-2 bg-white rounded-full"/>}
@@ -596,8 +610,8 @@ export default function Storefront() {
                         className={`w-full flex items-center gap-3.5 p-3.5 rounded-xl border-2 transition-all text-left ${paymentMethod==="bank_transfer"?'border-[#fe2c55] bg-red-50/50':'border-gray-200 hover:border-gray-300'}`}>
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${paymentMethod==="bank_transfer"?'bg-[#fe2c55] text-white':'bg-gray-100 text-gray-500'}`}><Banknote size={20}/></div>
                         <div className="flex-1">
-                          <p className="font-bold text-gray-900 text-sm">Chuyá»ƒn khoáº£n ngÃ¢n hÃ ng (VietQR)</p>
-                          <p className="text-xs text-gray-500 mt-0.5">QuÃ©t mÃ£ QR chuyá»ƒn khoáº£n tá»± Ä‘á»™ng Ä‘iá»n sá»‘ tiá»n & ná»™i dung</p>
+                          <p className="font-bold text-gray-900 text-sm">Chuyển khoản ngân hàng (VietQR)</p>
+                          <p className="text-xs text-gray-500 mt-0.5">Quét mã QR chuyển khoản tự động điền số tiền & nội dung</p>
                         </div>
                         <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${paymentMethod==="bank_transfer"?'border-[#fe2c55] bg-[#fe2c55]':'border-gray-300'}`}>
                           {paymentMethod==="bank_transfer" && <div className="w-2 h-2 bg-white rounded-full"/>}
@@ -613,21 +627,21 @@ export default function Storefront() {
                 <div className="space-y-4">
                   <div className="text-center py-6 bg-white rounded-2xl border border-gray-200">
                     <CheckCircle size={56} className="mx-auto text-green-500 mb-3"/>
-                    <h3 className="text-xl font-bold text-gray-900 mb-1">Äáº·t hÃ ng thÃ nh cÃ´ng!</h3>
-                    <p className="text-sm text-gray-500 px-4">Cáº£m Æ¡n <strong>{checkoutForm.name}</strong>! Shop sáº½ liÃªn há»‡ <strong>{checkoutForm.phone}</strong> Ä‘á»ƒ chuáº©n bá»‹ Ä‘Æ¡n gá»­i báº¡n.</p>
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">Đặt hàng thành công!</h3>
+                    <p className="text-sm text-gray-500 px-4">Cảm ơn <strong>{checkoutForm.name}</strong>! Shop sẽ liên hệ <strong>{checkoutForm.phone}</strong> để chuẩn bị đơn gửi bạn.</p>
                   </div>
 
                   {/* Order Code */}
                   <div className="bg-white rounded-xl border border-gray-200 p-4">
-                    <p className="text-xs font-bold text-gray-400 uppercase mb-2">MÃ£ Ä‘Æ¡n hÃ ng cá»§a báº¡n</p>
+                    <p className="text-xs font-bold text-gray-400 uppercase mb-2">Mã đơn hàng của bạn</p>
                     <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
                       <span className="font-mono font-bold text-lg text-gray-900 tracking-wider">{placedOrder.orderId}</span>
                       <button onClick={() => { copyText(placedOrder.orderId); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
                         className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${copied?'bg-green-500 text-white':'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
-                        <Copy size={13}/> {copied ? "ÄÃ£ sao chÃ©p!" : "Sao chÃ©p"}
+                        <Copy size={13}/> {copied ? "Đã sao chép!" : "Sao chép"}
                       </button>
                     </div>
-                    <p className="text-xs text-gray-400 mt-2">DÃ¹ng mÃ£ nÃ y hoáº·c SÄT Ä‘á»ƒ tra cá»©u hÃ nh trÃ¬nh Ä‘Æ¡n báº¥t cá»© lÃºc nÃ o</p>
+                    <p className="text-xs text-gray-400 mt-2">Dùng mã này hoặc SĐT để tra cứu hành trình đơn bất cứ lúc nào</p>
                   </div>
 
                   {/* COD Info */}
@@ -635,11 +649,11 @@ export default function Storefront() {
                     <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Truck size={18} className="text-orange-500"/>
-                        <p className="font-bold text-orange-800 text-sm">Thanh toÃ¡n khi nháº­n hÃ ng (COD)</p>
+                        <p className="font-bold text-orange-800 text-sm">Thanh toán khi nhận hàng (COD)</p>
                       </div>
-                      <p className="text-sm text-orange-700">Báº¡n chá»‰ cáº§n <strong>tráº£ tiá»n máº·t cho shipper</strong> khi nháº­n hÃ ng. KhÃ´ng cáº§n thanh toÃ¡n trÆ°á»›c.</p>
+                      <p className="text-sm text-orange-700">Bạn chỉ cần <strong>trả tiền mặt cho shipper</strong> khi nhận hàng. Không cần thanh toán trước.</p>
                       <div className="mt-3 bg-white rounded-lg p-3 border border-orange-200 flex justify-between">
-                        <span className="text-sm text-gray-600 font-medium">Sá»‘ tiá»n cáº§n tráº£</span>
+                        <span className="text-sm text-gray-600 font-medium">Số tiền cần trả</span>
                         <span className="font-bold text-[#fe2c55]">{formatCurrency(placedOrder.total)}</span>
                       </div>
                     </div>
@@ -650,16 +664,16 @@ export default function Storefront() {
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-3">
                         <Banknote size={18} className="text-blue-600"/>
-                        <p className="font-bold text-blue-900 text-sm">ThÃ´ng tin chuyá»ƒn khoáº£n</p>
+                        <p className="font-bold text-blue-900 text-sm">Thông tin chuyển khoản</p>
                       </div>
                       <div className="bg-white rounded-xl border border-blue-100 p-4 space-y-2.5 mb-3">
-                        {[["NgÃ¢n hÃ ng", bankName],["Sá»‘ TK", bankAccount],["TÃªn TK", bankOwner],["Sá»‘ tiá»n", formatCurrency(placedOrder.total)],["Ná»™i dung CK", placedOrder.orderId]].map(([label, val]) => (
+                        {[["Ngân hàng", bankName],["Số TK", bankAccount],["Tên TK", bankOwner],["Số tiền", formatCurrency(placedOrder.total)],["Nội dung CK", placedOrder.orderId]].map(([label, val]) => (
                           <div key={label} className="flex items-center justify-between">
                             <span className="text-xs text-gray-500 font-medium">{label}</span>
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-gray-900 text-sm">{val}</span>
-                              {["Sá»‘ TK","Ná»™i dung CK"].includes(label) && (
-                                <button onClick={() => copyText(val)} className="text-blue-500 hover:text-blue-700" title="Sao chÃ©p"><Copy size={12}/></button>
+                              {["Số TK","Nội dung CK"].includes(label) && (
+                                <button onClick={() => copyText(val)} className="text-blue-500 hover:text-blue-700" title="Sao chép"><Copy size={12}/></button>
                               )}
                             </div>
                           </div>
@@ -667,12 +681,12 @@ export default function Storefront() {
                       </div>
                       {/* VietQR */}
                       <div className="text-center">
-                        <p className="text-xs text-gray-500 mb-2 font-medium">QuÃ©t mÃ£ QR Ä‘á»ƒ chuyá»ƒn khoáº£n nhanh</p>
-                        <img src={vietQrUrl} alt="QR chuyá»ƒn khoáº£n" className="w-48 h-auto mx-auto rounded-xl shadow-sm border border-blue-100"
+                        <p className="text-xs text-gray-500 mb-2 font-medium">Quét mã QR để chuyển khoản nhanh</p>
+                        <img src={vietQrUrl} alt="QR chuyển khoản" className="w-48 h-auto mx-auto rounded-xl shadow-sm border border-blue-100"
                           onError={e => { (e.target as HTMLImageElement).style.display='none'; }}/>
                       </div>
                       <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-2 text-xs text-yellow-700 text-center">
-                        âš ï¸ Ghi Ä‘Ãºng ná»™i dung <strong>{placedOrder.orderId}</strong> khi chuyá»ƒn khoáº£n
+                        ⚠️ Ghi đúng nội dung <strong>{placedOrder.orderId}</strong> khi chuyển khoản
                       </div>
                     </div>
                   )}
@@ -680,13 +694,13 @@ export default function Storefront() {
                   {/* Track Order */}
                   <button onClick={() => { setIsCheckoutOpen(false); navigate("/track"); }}
                     className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-50 transition-colors text-sm shadow-sm">
-                    <Search size={16}/> Tra cá»©u hÃ nh trÃ¬nh Ä‘Æ¡n hÃ ng
+                    <Search size={16}/> Tra cứu hành trình đơn hàng
                     <ExternalLink size={14} className="text-gray-400"/>
                   </button>
 
                   <button onClick={() => { setIsCheckoutOpen(false); setCheckoutStep("cart"); setPlacedOrder(null); setCheckoutForm({name:"",phone:"",address:""}); }}
                     className="w-full bg-[#fe2c55] text-white font-bold py-3 rounded-xl hover:bg-[#e62045] transition-colors text-sm shadow-md shadow-red-200">
-                    Tiáº¿p tá»¥c mua sáº¯m
+                    Tiếp tục mua sắm
                   </button>
                 </div>
               )}
@@ -696,21 +710,21 @@ export default function Storefront() {
             {checkoutStep === "cart" && cart.length > 0 && (
               <div className="p-4 bg-white border-t border-gray-200 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
                 <div className="flex justify-between text-sm mb-3">
-                  <span className="text-gray-600 font-medium">Tá»•ng ({cartCount} sáº£n pháº©m)</span>
+                  <span className="text-gray-600 font-medium">Tổng ({cartCount} sản phẩm)</span>
                   <span className="font-bold text-[#fe2c55] text-base">{formatCurrency(cartTotal)}</span>
                 </div>
                 <button onClick={() => setCheckoutStep("payment")} disabled={!canProceedToPayment}
                   className="w-full py-3.5 bg-[#fe2c55] hover:bg-[#e62045] text-white rounded-xl font-bold text-base disabled:opacity-50 transition-colors shadow-lg shadow-red-200">
-                  Tiáº¿p tá»¥c â†’ Chá»n thanh toÃ¡n
+                  Tiếp tục → Chọn thanh toán
                 </button>
-                {!canProceedToPayment && <p className="text-xs text-gray-400 text-center mt-2">Vui lÃ²ng Ä‘iá»n há» tÃªn, sá»‘ Ä‘iá»‡n thoáº¡i vÃ  Ä‘á»‹a chá»‰ Ä‘á»ƒ tiáº¿p tá»¥c</p>}
+                {!canProceedToPayment && <p className="text-xs text-gray-400 text-center mt-2">Vui lòng điền họ tên, số điện thoại và địa chỉ để tiếp tục</p>}
               </div>
             )}
             {checkoutStep === "payment" && (
               <div className="p-4 bg-white border-t border-gray-200 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
                 <button onClick={placeOrder} disabled={placing}
                   className="w-full py-3.5 bg-[#fe2c55] hover:bg-[#e62045] text-white rounded-xl font-bold text-base disabled:opacity-50 transition-colors shadow-lg shadow-red-200">
-                  {placing ? "Äang táº¡o Ä‘Æ¡n..." : `âœ“ HoÃ n táº¥t Ä‘áº·t hÃ ng â€¢ ${formatCurrency(cartTotal)}`}
+                  {placing ? "Đang tạo đơn..." : `✓ Hoàn tất đặt hàng • ${formatCurrency(cartTotal)}`}
                 </button>
               </div>
             )}
@@ -720,4 +734,3 @@ export default function Storefront() {
     </div>
   );
 }
-

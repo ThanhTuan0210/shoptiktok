@@ -6,7 +6,7 @@ import { subDays, format } from "date-fns";
 // HENR.STUDIO — Đồ ngủ Pyjama cao cấp
 // ============================================================
 
-const PRODUCTS = [
+export const PRODUCTS = [
   // --- Bộ Pyjama Sọc Kẻ ---
   {
     name: "Bộ Pyjama Sọc Kẻ Đen Trắng Lụa Satin",

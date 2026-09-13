@@ -1,4 +1,4 @@
-﻿import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Layout from "./components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
@@ -12,7 +12,7 @@ import Settings from "./pages/Settings";
 import Storefront from "./pages/Storefront";
 import TrackOrder from "./pages/TrackOrder";
 import { db } from "./db/database";
-import { seedDatabase } from "./utils/seedData";
+import { seedDatabase, PRODUCTS } from "./utils/seedData";
 import productImages from "./product_images.json";
 
 export default function App() {
@@ -27,16 +27,30 @@ export default function App() {
         }
 
         // Clean legacy data if exists
-        const prod = await db.products.toArray();
-        const hasOldData = prod.some(p => p.sku.startsWith("AT-") || p.sku.startsWith("ASM-") || p.sku.startsWith("QJ-"));
+        let currentProducts = await db.products.toArray();
+        const hasOldData = currentProducts.some(p => p.sku.startsWith("AT-") || p.sku.startsWith("ASM-") || p.sku.startsWith("QJ-"));
         if (hasOldData) {
           await db.delete();
           window.location.reload();
           return;
         }
 
+        // Self-heal corrupted product names if any
+        const hasBadName = currentProducts.some(p => /[\u00C3\u00C2\u00E1\u00C4][\x80-\xbf]/.test(p.name) || /[\u00C3\u00C2\u00E1\u00C4][\x80-\xbf]/.test(p.category || ""));
+        if (hasBadName && PRODUCTS) {
+          for (const p of currentProducts) {
+            const seed = PRODUCTS.find(s => s.sku === p.sku);
+            if (seed) {
+              await db.products.update(p.id, {
+                name: seed.name,
+                category: seed.category,
+              });
+            }
+          }
+          currentProducts = await db.products.toArray();
+        }
+
         // Assign clean local product photos for all 13 products
-        const currentProducts = await db.products.toArray();
         const imgMap = productImages as Record<string, { main: string; extra: string[] }>;
 
         for (const p of currentProducts) {
@@ -65,7 +79,7 @@ export default function App() {
     return (
       <div style={{ minHeight: "100vh", backgroundColor: "#030712", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px" }}>
         <div style={{ width: "40px", height: "40px", border: "3px solid #f43f5e", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-        <p style={{ color: "#9ca3af", fontSize: "14px", fontFamily: "sans-serif" }}>Äang táº£i Henr.Studio...</p>
+        <p style={{ color: "#9ca3af", fontSize: "14px", fontFamily: "sans-serif" }}>Đang tải Henr.Studio...</p>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
