@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { db } from "../db/database";
-import type { Order, OrderStatus } from "../types";
+import type { Order, OrderStatus, Return } from "../types";
 import {
   Plus, Download, Upload, X,
-  Eye, Edit2, Trash2, Package, Printer, Truck, Phone, MessageSquare, CheckCircle2
+  Eye, Edit2, Trash2, Package, Printer, Truck, Phone, MessageSquare, CheckCircle2, RotateCcw, XCircle
 } from "lucide-react";
 import Modal from "../components/ui/Modal";
 import SearchInput from "../components/ui/SearchInput";
@@ -12,9 +12,31 @@ import EmptyState from "../components/ui/EmptyState";
 import PrintShippingModal from "../components/ui/PrintShippingModal";
 import {
   formatCurrency, formatDate, generateId, now, today,
-  getOrderStatusLabel, formatNumber, truncate
+  getOrderStatusLabel, getReturnReasonLabel, formatNumber, truncate
 } from "../utils/helpers";
 import { exportOrdersToExcel, importOrdersFromExcel } from "../utils/exportData";
+
+
+const CANCEL_REASONS_MAP: Record<string, string> = {
+  customer_changed_mind: "Khách đổi ý không muốn mua",
+  wrong_order: "Trùng đơn / Đặt nhầm",
+  out_of_stock: "Hết hàng phân loại",
+  unreachable_phone: "Không liên lạc được khách",
+  shipping_too_long: "Thời gian giao quá lâu",
+  high_shipping_fee: "Phí ship cao",
+  other: "Lý do khác",
+};
+
+const RETURN_REASONS_MAP: Record<string, string> = {
+  wrong_size: "Sai kích thước / size",
+  wrong_color: "Sai màu sắc",
+  wrong_product: "Giao nhầm sản phẩm",
+  defective: "Hàng lỗi / rách chỉ",
+  not_as_described: "Không giống mô tả ảnh",
+  changed_mind: "Đổi ý không muốn mua",
+  damaged_shipping: "Hư hỏng do vận chuyển",
+  other: "Lý do khác",
+};
 
 const STATUSES: OrderStatus[] = [
   "pending", "processing", "shipping", "delivered", "returned", "cancelled", "return_requested"
@@ -48,6 +70,21 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
   const initialFilter = queryStatus || defaultFilter || "all";
 
   const [orders, setOrders] = useState<Order[]>([]);
+  const [returnsList, setReturnsList] = useState<Return[]>([]);
+  const [reasonModal, setReasonModal] = useState<{
+    order: Order;
+    targetStatus: OrderStatus;
+    selectedReason: string;
+    customNote: string;
+  } | null>(null);
+
+  const returnsMap = useMemo(() => {
+    const map = new Map<string, Return>();
+    for (const r of returnsList) {
+      if (r.orderId) map.set(r.orderId, r);
+    }
+    return map;
+  }, [returnsList]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(initialFilter);
@@ -77,8 +114,12 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
 
   async function loadOrders() {
     setLoading(true);
-    const data = await db.orders.orderBy("orderDate").reverse().toArray();
-    setOrders(data);
+    const [ordersData, returnsData] = await Promise.all([
+      db.orders.orderBy("orderDate").reverse().toArray(),
+      db.returns ? db.returns.toArray() : Promise.resolve([]),
+    ]);
+    setOrders(ordersData);
+    setReturnsList(returnsData || []);
     setLoading(false);
   }
 
@@ -187,12 +228,72 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
   }
 
   // Realistic inventory stock handling on order status transition
-  async function handleStatusChange(id: string, newStatus: OrderStatus) {
+  function onStatusDropdownChange(order: Order, newStatus: OrderStatus) {
+    if (order.status === newStatus) return;
+    if (newStatus === "returned" || newStatus === "return_requested" || newStatus === "cancelled") {
+      setReasonModal({
+        order,
+        targetStatus: newStatus,
+        selectedReason: newStatus === "cancelled" ? "customer_changed_mind" : "wrong_size",
+        customNote: "",
+      });
+      return;
+    }
+    handleStatusChange(order.id, newStatus);
+  }
+
+  async function confirmStatusWithReason() {
+    if (!reasonModal) return;
+    const { order, targetStatus, selectedReason, customNote } = reasonModal;
+    const updates: Partial<Order> = {
+      status: targetStatus,
+      updatedAt: now(),
+    };
+
+    if (targetStatus === "cancelled") {
+      updates.cancelReason = CANCEL_REASONS_MAP[selectedReason] || selectedReason;
+      if (customNote) updates.note = customNote;
+    } else {
+      updates.returnReason = selectedReason;
+      if (customNote) updates.note = customNote;
+
+      const existingReturn = returnsMap.get(order.id);
+      if (!existingReturn) {
+        await db.returns.add({
+          id: generateId(),
+          orderId: order.id,
+          tiktokOrderId: order.tiktokOrderId,
+          customerName: order.customerName,
+          items: order.items,
+          reason: selectedReason as any,
+          reasonDetail: customNote || undefined,
+          status: targetStatus === "returned" ? "received" : "pending",
+          returnDate: today(),
+          refundAmount: order.total,
+          createdAt: now(),
+          updatedAt: now(),
+        });
+      } else {
+        await db.returns.update(existingReturn.id, {
+          reason: selectedReason as any,
+          reasonDetail: customNote || existingReturn.reasonDetail,
+          status: targetStatus === "returned" ? "received" : existingReturn.status,
+          updatedAt: now(),
+        });
+      }
+    }
+
+    await handleStatusChange(order.id, targetStatus, updates);
+    setReasonModal(null);
+    await loadOrders();
+  }
+
+  async function handleStatusChange(id: string, newStatus: OrderStatus, extraUpdates?: Partial<Order>) {
     const targetOrder = orders.find(o => o.id === id);
     if (!targetOrder || targetOrder.status === newStatus) return;
 
     const oldStatus = targetOrder.status;
-    const updates: Partial<Order> = { status: newStatus, updatedAt: now() };
+    const updates: Partial<Order> = { status: newStatus, updatedAt: now(), ...(extraUpdates || {}) };
 
     if (newStatus === "shipping" && !targetOrder.shippingDate) {
       updates.shippingDate = today();
@@ -594,7 +695,7 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                   <td>
                     <select
                       value={o.status}
-                      onChange={e => handleStatusChange(o.id, e.target.value as OrderStatus)}
+                      onChange={e => onStatusDropdownChange(o, e.target.value as OrderStatus)}
                       className={`text-xs px-2.5 py-1 rounded-full border font-semibold bg-gray-900 cursor-pointer ${
                         o.status === "delivered" ? "text-emerald-400 border-emerald-800" :
                         o.status === "shipping" ? "text-purple-400 border-purple-800" :
@@ -607,6 +708,40 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                     >
                       {STATUSES.map(s => <option key={s} value={s} className="bg-gray-900 text-gray-100">{getOrderStatusLabel(s)}</option>)}
                     </select>
+
+                    {/* Compact Return Reason Badge */}
+                    {(o.status === "returned" || o.status === "return_requested") && (() => {
+                      const ret = returnsMap.get(o.id);
+                      const rKey = o.returnReason || ret?.reason || "wrong_size";
+                      const rLabel = RETURN_REASONS_MAP[rKey] || getReturnReasonLabel(rKey);
+                      const rDetail = ret?.reasonDetail || o.note;
+                      const tooltip = `Lý do hoàn: ${rLabel}${rDetail && rDetail !== rLabel ? ` (${rDetail})` : ""}`;
+                      return (
+                        <div
+                          className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-amber-300/90 bg-amber-950/40 border border-amber-800/40 rounded-md px-1.5 py-0.5 max-w-[155px] cursor-help hover:border-amber-600 transition-colors"
+                          title={tooltip}
+                        >
+                          <RotateCcw size={10} className="text-amber-400 shrink-0" />
+                          <span className="truncate">{rLabel}</span>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Compact Cancel Reason Badge */}
+                    {o.status === "cancelled" && (() => {
+                      const cKey = o.cancelReason || "customer_changed_mind";
+                      const cLabel = CANCEL_REASONS_MAP[cKey] || o.cancelReason || o.note || "Khách đổi ý không mua";
+                      const tooltip = `Lý do hủy: ${cLabel}`;
+                      return (
+                        <div
+                          className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-rose-300/90 bg-rose-950/40 border border-rose-800/40 rounded-md px-1.5 py-0.5 max-w-[155px] cursor-help hover:border-rose-600 transition-colors"
+                          title={tooltip}
+                        >
+                          <XCircle size={10} className="text-rose-400 shrink-0" />
+                          <span className="truncate">{cLabel}</span>
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td>
                     <p className="text-xs text-gray-300 font-medium">{o.shippingCarrier || "—"}</p>
@@ -818,6 +953,51 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                 📍 {showDetail.customerAddress || "Chưa cập nhật địa chỉ"}
               </p>
             </div>
+
+            {/* Reason Banner in Order Detail */}
+            {(showDetail.status === "returned" || showDetail.status === "return_requested") && (() => {
+              const ret = returnsMap.get(showDetail.id);
+              const rKey = showDetail.returnReason || ret?.reason || "wrong_size";
+              const rLabel = RETURN_REASONS_MAP[rKey] || getReturnReasonLabel(rKey);
+              const rDetail = ret?.reasonDetail || showDetail.note;
+              return (
+                <div className="bg-amber-950/40 border border-amber-800/60 rounded-xl p-3 text-xs space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-400">
+                    <RotateCcw size={14} />
+                    <span>Thông tin hoàn trả hàng:</span>
+                  </div>
+                  <p className="text-amber-200 font-medium">
+                    Lý do: <strong>{rLabel}</strong>
+                  </p>
+                  {rDetail && rDetail !== rLabel && (
+                    <p className="text-gray-400 text-[11px] italic">
+                      Chi tiết: "{rDetail}"
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+
+            {showDetail.status === "cancelled" && (() => {
+              const cKey = showDetail.cancelReason || "customer_changed_mind";
+              const cLabel = CANCEL_REASONS_MAP[cKey] || showDetail.cancelReason || showDetail.note || "Khách đổi ý không mua";
+              return (
+                <div className="bg-red-950/40 border border-red-800/60 rounded-xl p-3 text-xs space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-red-400">
+                    <XCircle size={14} />
+                    <span>Thông tin hủy đơn:</span>
+                  </div>
+                  <p className="text-red-200 font-medium">
+                    Lý do: <strong>{cLabel}</strong>
+                  </p>
+                  {showDetail.note && showDetail.note !== cLabel && (
+                    <p className="text-gray-400 text-[11px] italic">
+                      Ghi chú: "{showDetail.note}"
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
 
             <div>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Sản phẩm trong đơn ({showDetail.items.length})</p>

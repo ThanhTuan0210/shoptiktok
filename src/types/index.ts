@@ -145,6 +145,8 @@ export interface Order {
   trackingNumber?: string;
   paymentMethod?: string;
   liveSessionId?: string;
+  cancelReason?: string;
+  returnReason?: string;
   note?: string;
   tiktokFeeRate?: number;
   tiktokFeeAmount?: number;

@@ -90,6 +90,32 @@ export default function App() {
       } catch (err) {
         console.error("App init error:", err);
       } finally {
+
+        // Self-heal return and cancel reasons for existing orders
+        const allOrders = await db.orders.toArray();
+        const allReturns = await db.returns.toArray();
+        const returnsByOrderId = new Map(allReturns.map(r => [r.orderId, r]));
+
+        const returnReasonsSample = ["wrong_size", "wrong_color", "not_as_described", "changed_mind", "defective"];
+        const cancelReasonsSample = [
+          "Khách đổi ý không muốn mua nữa",
+          "Trùng đơn / Khách đặt nhầm 2 lần",
+          "Không liên lạc được số điện thoại",
+          "Thời gian giao dự kiến lâu",
+        ];
+
+        for (let i = 0; i < allOrders.length; i++) {
+          const ord = allOrders[i];
+          if ((ord.status === "returned" || ord.status === "return_requested") && !ord.returnReason) {
+            const retRecord = returnsByOrderId.get(ord.id);
+            const rReason = retRecord?.reason || returnReasonsSample[i % returnReasonsSample.length];
+            await db.orders.update(ord.id, { returnReason: rReason });
+          } else if (ord.status === "cancelled" && !ord.cancelReason) {
+            const cReason = cancelReasonsSample[i % cancelReasonsSample.length];
+            await db.orders.update(ord.id, { cancelReason: cReason });
+          }
+        }
+
         setReady(true);
       }
     }
