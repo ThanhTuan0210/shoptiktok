@@ -814,7 +814,7 @@ export default function Storefront() {
                       onClick={() => setActiveImageIdx(idx)}
                       className={`w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${activeImageIdx === idx ? 'border-[#fe2c55] scale-95 shadow-sm' : 'border-gray-200 opacity-60 hover:opacity-100'}`}
                     >
-                      <img src={img} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).src = FALLBACKS[0]; }}/>
+                      <img src={img} loading="lazy" decoding="async" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).src = FALLBACKS[0]; }}/>
                     </button>
                   ))}
                 </div>
@@ -1118,7 +1118,7 @@ export default function Storefront() {
                         <div className="p-3.5 space-y-3 divide-y divide-gray-100">
                           {cart.map((item, idx) => (
                             <div key={idx} className="flex gap-3 pt-3 first:pt-0">
-                              <img src={getImg(item.product, idx)} className="w-16 h-16 object-cover rounded-xl border border-gray-100 shrink-0" onError={e => { (e.target as HTMLImageElement).src = FALLBACKS[0]; }}/>
+                              <img src={getImg(item.product, idx)} loading="lazy" decoding="async" className="w-16 h-16 object-cover rounded-xl border border-gray-100 shrink-0" onError={e => { (e.target as HTMLImageElement).src = FALLBACKS[0]; }}/>
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-gray-900 line-clamp-2 mb-0.5">{item.product.name}</p>
                                 <p className="text-[11px] text-gray-500 mb-2">{item.variant.color}, Size {item.variant.size}</p>

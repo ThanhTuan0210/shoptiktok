@@ -1,20 +1,33 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import Layout from "./components/layout/Layout";
-import Dashboard from "./pages/Dashboard";
-import LiveStudio from "./pages/LiveStudio";
-import Inventory from "./pages/Inventory";
-import OrdersWrapper from "./pages/OrdersWrapper";
-import FinanceWrapper from "./pages/FinanceWrapper";
-import IssuesWrapper from "./pages/IssuesWrapper";
-import Customers from "./pages/Customers";
-import Partners from "./pages/Partners";
-import Settings from "./pages/Settings";
-import Storefront from "./pages/Storefront";
-import TrackOrder from "./pages/TrackOrder";
+import ErrorBoundary from "./components/ui/ErrorBoundary";
 import { db } from "./db/database";
 import { seedDatabase, PRODUCTS } from "./utils/seedData";
 import productImages from "./product_images.json";
+
+// Code-split pages with React.lazy
+const Storefront = lazy(() => import("./pages/Storefront"));
+const TrackOrder = lazy(() => import("./pages/TrackOrder"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const LiveStudio = lazy(() => import("./pages/LiveStudio"));
+const Inventory = lazy(() => import("./pages/Inventory"));
+const OrdersWrapper = lazy(() => import("./pages/OrdersWrapper"));
+const FinanceWrapper = lazy(() => import("./pages/FinanceWrapper"));
+const IssuesWrapper = lazy(() => import("./pages/IssuesWrapper"));
+const Customers = lazy(() => import("./pages/Customers"));
+const Partners = lazy(() => import("./pages/Partners"));
+const Settings = lazy(() => import("./pages/Settings"));
+
+// Loading spinner fallback for lazy components
+function PageLoading() {
+  return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 p-8">
+      <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+      <p className="text-xs text-gray-500">Đang tải...</p>
+    </div>
+  );
+}
 
 export default function App() {
   const [ready, setReady] = useState(false);
@@ -54,7 +67,6 @@ export default function App() {
         // Assign clean local product photos for all 13 products
         const imgMap = productImages as Record<string, { main: string; extra: string[] }>;
 
-
         // Sync description and tiktokVideoUrl for all products
         if (PRODUCTS) {
           for (const p of currentProducts) {
@@ -90,7 +102,6 @@ export default function App() {
       } catch (err) {
         console.error("App init error:", err);
       } finally {
-
         // Self-heal return and cancel reasons for existing orders
         const allOrders = await db.orders.toArray();
         const allReturns = await db.returns.toArray();
@@ -133,27 +144,31 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      {/* Customer Storefront (Full screen) */}
-      <Route path="/shop" element={<Storefront />} />
-      <Route path="/track" element={<TrackOrder />} />
+    <ErrorBoundary>
+      <Suspense fallback={<PageLoading />}>
+        <Routes>
+          {/* Customer Storefront (Full screen) */}
+          <Route path="/shop" element={<Storefront />} />
+          <Route path="/track" element={<TrackOrder />} />
 
-      {/* Admin Panel */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
-      <Route path="/inventory" element={<Layout><Inventory /></Layout>} />
-      <Route path="/orders" element={<Layout><OrdersWrapper /></Layout>} />
-      <Route path="/live" element={<Layout><LiveStudio /></Layout>} />
-      <Route path="/shipping" element={<Navigate to="/orders" replace />} />
-      <Route path="/finance" element={<Layout><FinanceWrapper /></Layout>} />
-      <Route path="/analytics" element={<Navigate to="/finance" replace />} />
-      <Route path="/issues" element={<Layout><IssuesWrapper /></Layout>} />
-      <Route path="/returns" element={<Navigate to="/issues" replace />} />
-      <Route path="/defective" element={<Navigate to="/issues" replace />} />
-      <Route path="/customers" element={<Layout><Customers /></Layout>} />
-      <Route path="/partners" element={<Layout><Partners /></Layout>} />
-      <Route path="/settings" element={<Layout><Settings /></Layout>} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
+          {/* Admin Panel */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+          <Route path="/inventory" element={<Layout><Inventory /></Layout>} />
+          <Route path="/orders" element={<Layout><OrdersWrapper /></Layout>} />
+          <Route path="/live" element={<Layout><LiveStudio /></Layout>} />
+          <Route path="/shipping" element={<Navigate to="/orders" replace />} />
+          <Route path="/finance" element={<Layout><FinanceWrapper /></Layout>} />
+          <Route path="/analytics" element={<Navigate to="/finance" replace />} />
+          <Route path="/issues" element={<Layout><IssuesWrapper /></Layout>} />
+          <Route path="/returns" element={<Navigate to="/issues" replace />} />
+          <Route path="/defective" element={<Navigate to="/issues" replace />} />
+          <Route path="/customers" element={<Layout><Customers /></Layout>} />
+          <Route path="/partners" element={<Layout><Partners /></Layout>} />
+          <Route path="/settings" element={<Layout><Settings /></Layout>} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   );
 }

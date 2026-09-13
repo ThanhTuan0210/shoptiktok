@@ -1,0 +1,19 @@
+{
+  "name": "Henr.Studio - Đồ Ngủ & Pyjama Cao Cấp",
+  "short_name": "Henr.Studio",
+  "description": "Hệ thống quản lý bán hàng & Storefront đồ ngủ lụa cao cấp Henr.Studio",
+  "start_url": "/shop",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#030712",
+  "theme_color": "#030712",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
