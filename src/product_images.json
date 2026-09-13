@@ -1,0 +1,106 @@
+{
+  "PJ-SOC-DEN-001": {
+    "main": "/products/PJ-SOC-DEN-001-main.jpg",
+    "extra": [
+      "/products/PJ-SOC-DEN-001-1.jpg",
+      "/products/PJ-SOC-DEN-001-2.jpg",
+      "/products/PJ-SOC-DEN-001-3.jpg"
+    ]
+  },
+  "PJ-SOC-HON-001": {
+    "main": "/products/PJ-SOC-HON-001-main.jpg",
+    "extra": [
+      "/products/PJ-SOC-HON-001-1.jpg",
+      "/products/PJ-SOC-HON-001-2.jpg",
+      "/products/PJ-SOC-HON-001-3.jpg"
+    ]
+  },
+  "PJ-SOC-NAU-001": {
+    "main": "/products/PJ-SOC-NAU-001-main.jpg",
+    "extra": [
+      "/products/PJ-SOC-NAU-001-1.jpg",
+      "/products/PJ-SOC-NAU-001-2.jpg",
+      "/products/PJ-SOC-NAU-001-3.jpg"
+    ]
+  },
+  "PJ-SOC-XAN-001": {
+    "main": "/products/PJ-SOC-XAN-001-main.jpg",
+    "extra": [
+      "/products/PJ-SOC-XAN-001-1.jpg",
+      "/products/PJ-SOC-XAN-001-2.jpg",
+      "/products/PJ-SOC-XAN-001-3.jpg"
+    ]
+  },
+  "PJ-TRON-001": {
+    "main": "/products/PJ-TRON-001-main.jpg",
+    "extra": [
+      "/products/PJ-TRON-001-1.jpg",
+      "/products/PJ-TRON-001-2.jpg",
+      "/products/PJ-TRON-001-3.jpg"
+    ]
+  },
+  "PJ-TRON-COT-001": {
+    "main": "/products/PJ-TRON-COT-001-main.jpg",
+    "extra": [
+      "/products/PJ-TRON-COT-001-1.jpg",
+      "/products/PJ-TRON-COT-001-2.jpg",
+      "/products/PJ-TRON-COT-001-3.jpg"
+    ]
+  },
+  "PJ-CARO-001": {
+    "main": "/products/PJ-CARO-001-main.jpg",
+    "extra": [
+      "/products/PJ-CARO-001-1.jpg",
+      "/products/PJ-CARO-001-2.jpg",
+      "/products/PJ-CARO-001-3.jpg"
+    ]
+  },
+  "PJ-CARO-FLA-001": {
+    "main": "/products/PJ-CARO-FLA-001-main.jpg",
+    "extra": [
+      "/products/PJ-CARO-FLA-001-1.jpg",
+      "/products/PJ-CARO-FLA-001-2.jpg",
+      "/products/PJ-CARO-FLA-001-3.jpg"
+    ]
+  },
+  "PJ-NGAN-001": {
+    "main": "/products/PJ-NGAN-001-main.jpg",
+    "extra": [
+      "/products/PJ-NGAN-001-1.jpg",
+      "/products/PJ-NGAN-001-2.jpg",
+      "/products/PJ-NGAN-001-3.jpg"
+    ]
+  },
+  "VN-LUA-001": {
+    "main": "/products/VN-LUA-001-main.jpg",
+    "extra": [
+      "/products/VN-LUA-001-1.jpg",
+      "/products/VN-LUA-001-2.jpg",
+      "/products/VN-LUA-001-3.jpg"
+    ]
+  },
+  "AC-LONG-001": {
+    "main": "/products/AC-LONG-001-main.jpg",
+    "extra": [
+      "/products/AC-LONG-001-1.jpg",
+      "/products/AC-LONG-001-2.jpg",
+      "/products/AC-LONG-001-3.jpg"
+    ]
+  },
+  "QP-LUA-001": {
+    "main": "/products/QP-LUA-001-main.jpg",
+    "extra": [
+      "/products/QP-LUA-001-1.jpg",
+      "/products/QP-LUA-001-2.jpg",
+      "/products/QP-LUA-001-3.jpg"
+    ]
+  },
+  "GIFT-SET-001": {
+    "main": "/products/GIFT-SET-001-main.jpg",
+    "extra": [
+      "/products/GIFT-SET-001-1.jpg",
+      "/products/GIFT-SET-001-2.jpg",
+      "/products/GIFT-SET-001-3.jpg"
+    ]
+  }
+}
