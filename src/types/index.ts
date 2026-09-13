@@ -143,6 +143,12 @@ export interface Order {
   total: number;
   shippingCarrier?: string;
   trackingNumber?: string;
+  carrierTrackingCode?: string;
+  carrierName?: string;
+  carrierFee?: number;
+  carrierStatus?: string;
+  paymentProofTxId?: string;
+  exchanges?: OrderExchangeRecord[];
   paymentMethod?: string;
   liveSessionId?: string;
   cancelReason?: string;
@@ -307,3 +313,91 @@ export const DEFAULT_WEBSHIELD_SETTINGS: WebShieldSettings = {
   blockShortcuts: true,
 };
 
+
+
+// =====================
+// ENTERPRISE SUITE: REAL BANKING, CARRIER, CLOUD & EXCHANGE
+// =====================
+
+export interface PaymentGatewayConfig {
+  provider: "sepay" | "payos";
+  apiToken: string;
+  accountNumber: string;
+  bankName: string;
+  isAutoVerifyEnabled: boolean;
+  webhookUrl?: string;
+}
+
+export const DEFAULT_PAYMENT_GATEWAY_CONFIG: PaymentGatewayConfig = {
+  provider: "sepay",
+  apiToken: "",
+  accountNumber: "1234567890",
+  bankName: "Vietcombank",
+  isAutoVerifyEnabled: true,
+};
+
+export interface CourierConfig {
+  provider: "ghn" | "viettelpost" | "ghtk";
+  apiToken: string;
+  shopId: string;
+  defaultWeightGram: number;
+  requiredNote: string;
+  isSandbox: boolean;
+}
+
+export const DEFAULT_COURIER_CONFIG: CourierConfig = {
+  provider: "ghn",
+  apiToken: "",
+  shopId: "192841",
+  defaultWeightGram: 350,
+  requiredNote: "CHOXEMHANGKHONGTHU",
+  isSandbox: true,
+};
+
+export interface SupabaseSyncConfig {
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+  autoSync: boolean;
+  lastSyncTime?: string;
+}
+
+export const DEFAULT_SUPABASE_SYNC_CONFIG: SupabaseSyncConfig = {
+  supabaseUrl: "",
+  supabaseAnonKey: "",
+  autoSync: false,
+};
+
+export interface TikTokBridgeConfig {
+  appKey: string;
+  appSecret: string;
+  accessToken: string;
+  shopCipher: string;
+  safetyBufferStock: number;
+  autoLockLiveStock: boolean;
+}
+
+export const DEFAULT_TIKTOK_BRIDGE_CONFIG: TikTokBridgeConfig = {
+  appKey: "",
+  appSecret: "",
+  accessToken: "",
+  shopCipher: "",
+  safetyBufferStock: 3,
+  autoLockLiveStock: true,
+};
+
+export interface OrderExchangeRecord {
+  id: string;
+  orderId: string;
+  originalVariantId: string;
+  originalProductName: string;
+  originalSku: string;
+  newVariantId: string;
+  newProductName: string;
+  newSku: string;
+  qty: number;
+  reason: string;
+  priceDifference: number;
+  shippingFeePayer: "shop" | "customer" | "split";
+  status: "pending_pickup" | "in_transit" | "completed";
+  createdAt: string;
+}

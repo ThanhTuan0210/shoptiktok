@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { db } from "../db/database";
-import type { AppSettings, PromoSettings, WebShieldSettings } from "../types";
-import { DEFAULT_PROMO_SETTINGS, DEFAULT_WEBSHIELD_SETTINGS } from "../types";
-import { Settings as SettingsIcon, Save, Lock, Download, Upload, Trash2, Database, ShieldCheck, Banknote, Gift, Ticket, Sparkles, Percent, Bell } from "lucide-react";
+import type { AppSettings, PromoSettings, WebShieldSettings, PaymentGatewayConfig, CourierConfig, SupabaseSyncConfig, TikTokBridgeConfig } from "../types";
+import { DEFAULT_PROMO_SETTINGS, DEFAULT_WEBSHIELD_SETTINGS, DEFAULT_PAYMENT_GATEWAY_CONFIG, DEFAULT_COURIER_CONFIG, DEFAULT_SUPABASE_SYNC_CONFIG, DEFAULT_TIKTOK_BRIDGE_CONFIG } from "../types";
+import { Settings as SettingsIcon, Save, Lock, Download, Upload, Trash2, Database, ShieldCheck, Banknote, Gift, Ticket, Sparkles, Percent, Bell, Truck, Cloud, Video, CheckCircle2, AlertTriangle, ExternalLink, RefreshCw } from "lucide-react";
+import { testSupabaseConnection, generateSupabaseSQLSchema } from "../services/supabaseSync";
 import { exportDatabaseBackup } from "../utils/exportData";
 
 
@@ -47,6 +48,60 @@ export default function Settings() {
       localStorage.setItem("tt_webShield", JSON.stringify(updated));
       return updated;
     });
+  };
+
+  // Enterprise: Payment Gateway (SePay)
+  const [paymentConfig, setPaymentConfig] = useState<PaymentGatewayConfig>(() => {
+    try {
+      const saved = localStorage.getItem("tt_paymentGateway");
+      if (saved) return { ...DEFAULT_PAYMENT_GATEWAY_CONFIG, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_PAYMENT_GATEWAY_CONFIG;
+  });
+
+  // Enterprise: Courier Gateway (GHN)
+  const [courierConfig, setCourierConfig] = useState<CourierConfig>(() => {
+    try {
+      const saved = localStorage.getItem("tt_courierConfig");
+      if (saved) return { ...DEFAULT_COURIER_CONFIG, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_COURIER_CONFIG;
+  });
+
+  // Enterprise: Supabase Sync
+  const [supabaseConfig, setSupabaseConfig] = useState<SupabaseSyncConfig>(() => {
+    try {
+      const saved = localStorage.getItem("tt_supabaseConfig");
+      if (saved) return { ...DEFAULT_SUPABASE_SYNC_CONFIG, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_SUPABASE_SYNC_CONFIG;
+  });
+  const [supabaseTestResult, setSupabaseTestResult] = useState<string | null>(null);
+  const [testingSupabase, setTestingSupabase] = useState(false);
+  const [showSqlModal, setShowSqlModal] = useState(false);
+
+  // Enterprise: TikTok Bridge
+  const [tiktokBridge, setTiktokBridge] = useState<TikTokBridgeConfig>(() => {
+    try {
+      const saved = localStorage.getItem("tt_tiktokBridge");
+      if (saved) return { ...DEFAULT_TIKTOK_BRIDGE_CONFIG, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_TIKTOK_BRIDGE_CONFIG;
+  });
+
+  const saveEnterpriseSettings = () => {
+    localStorage.setItem("tt_paymentGateway", JSON.stringify(paymentConfig));
+    localStorage.setItem("tt_courierConfig", JSON.stringify(courierConfig));
+    localStorage.setItem("tt_supabaseConfig", JSON.stringify(supabaseConfig));
+    localStorage.setItem("tt_tiktokBridge", JSON.stringify(tiktokBridge));
+  };
+
+  const handleTestSupabase = async () => {
+    setTestingSupabase(true);
+    setSupabaseTestResult(null);
+    const res = await testSupabaseConnection(supabaseConfig);
+    setTestingSupabase(false);
+    setSupabaseTestResult(res.message);
   };
 
   const [promoSettings, setPromoSettings] = useState<PromoSettings>(() => {
@@ -588,6 +643,283 @@ export default function Settings() {
             >
               <span className={"inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out " + (promoSettings.enableSocialProof ? "translate-x-5" : "translate-x-0")} />
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ======================================================== */}
+      {/* ENTERPRISE SUITE: 4 PHÂN HỆ VẬN HÀNH THỰC TẾ             */}
+      {/* ======================================================== */}
+
+      {/* 1. CỔNG NGÂN HÀNG VIETQR TỰ ĐỘNG (SEPAY / PAYOS API) */}
+      <div className="card space-y-4 border-emerald-900/40 bg-gradient-to-br from-gray-900 via-gray-900 to-emerald-950/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-800">
+          <div>
+            <h2 className="text-base font-semibold text-white flex items-center gap-2">
+              <Banknote size={18} className="text-emerald-400" /> Cổng Đối Soát Ngân Hàng VietQR Tự Động (SePay API)
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Tự động bắt biến động số dư tài khoản thật. Khi khách chuyển khoản đúng mã đơn, hệ thống tự động duyệt đơn sau 3 giây.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className={"text-xs font-semibold px-2.5 py-1 rounded-full border " + (paymentConfig.isAutoVerifyEnabled ? "bg-emerald-900/50 text-emerald-400 border-emerald-800" : "bg-gray-800 text-gray-400 border-gray-700")}>
+              {paymentConfig.isAutoVerifyEnabled ? "✓ Tự Động Duyệt Tiền" : "Duyệt Thủ Công"}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const updated = { ...paymentConfig, isAutoVerifyEnabled: !paymentConfig.isAutoVerifyEnabled };
+                setPaymentConfig(updated);
+                localStorage.setItem("tt_paymentGateway", JSON.stringify(updated));
+              }}
+              className={"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out " + (paymentConfig.isAutoVerifyEnabled ? "bg-emerald-600" : "bg-gray-700")}
+            >
+              <span className={"inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out " + (paymentConfig.isAutoVerifyEnabled ? "translate-x-5" : "translate-x-0")} />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <div>
+            <label className="label text-xs">Cổng đối soát</label>
+            <select
+              className="input text-xs"
+              value={paymentConfig.provider}
+              onChange={e => {
+                const updated = { ...paymentConfig, provider: e.target.value as any };
+                setPaymentConfig(updated);
+                localStorage.setItem("tt_paymentGateway", JSON.stringify(updated));
+              }}
+            >
+              <option value="sepay">SePay.vn (Khuyên dùng - MB, VCB, ACB, TPB...)</option>
+              <option value="payos">PayOS Open Gateway</option>
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label text-xs flex items-center justify-between">
+              <span>SePay API Token</span>
+              <a href="https://my.sepay.vn" target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline inline-flex items-center gap-1 text-[11px]">
+                Lấy token tại SePay.vn <ExternalLink size={10} />
+              </a>
+            </label>
+            <input
+              type="password"
+              className="input text-xs font-mono"
+              placeholder="VD: SP_live_928194821a8c9b2..."
+              value={paymentConfig.apiToken}
+              onChange={e => {
+                const updated = { ...paymentConfig, apiToken: e.target.value };
+                setPaymentConfig(updated);
+                localStorage.setItem("tt_paymentGateway", JSON.stringify(updated));
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 2. CỔNG KẾT NỐI BƯU CỤC GIAO VẬN (GHN API) */}
+      <div className="card space-y-4 border-amber-900/40 bg-gradient-to-br from-gray-900 via-gray-900 to-amber-950/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-800">
+          <div>
+            <h2 className="text-base font-semibold text-white flex items-center gap-2">
+              <Truck size={18} className="text-amber-400" /> Cổng Kết Nối Bưu Cục Giao Vận (GHN Open API)
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Bấm 1 nút bắn đơn sang bưu cục GHN/Viettel Post, tự động lấy mã vận đơn chính thức và in nhãn A6 chuẩn quy cách.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={"text-xs font-semibold px-2.5 py-1 rounded-full border " + (courierConfig.isSandbox ? "bg-amber-950/60 text-amber-400 border-amber-800" : "bg-emerald-950/60 text-emerald-400 border-emerald-800")}>
+              {courierConfig.isSandbox ? "Môi Trường Sandbox (Test)" : "Môi Trường Thật (Production)"}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1">
+          <div>
+            <label className="label text-xs">Đơn vị vận chuyển</label>
+            <select
+              className="input text-xs"
+              value={courierConfig.provider}
+              onChange={e => {
+                const updated = { ...courierConfig, provider: e.target.value as any };
+                setCourierConfig(updated);
+                localStorage.setItem("tt_courierConfig", JSON.stringify(updated));
+              }}
+            >
+              <option value="ghn">Giao Hàng Nhanh (GHN)</option>
+              <option value="viettelpost">Viettel Post</option>
+              <option value="ghtk">Giao Hàng Tiết Kiệm (GHTK)</option>
+            </select>
+          </div>
+          <div>
+            <label className="label text-xs">GHN Shop ID</label>
+            <input
+              className="input text-xs font-mono"
+              placeholder="VD: 192841"
+              value={courierConfig.shopId}
+              onChange={e => {
+                const updated = { ...courierConfig, shopId: e.target.value };
+                setCourierConfig(updated);
+                localStorage.setItem("tt_courierConfig", JSON.stringify(updated));
+              }}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label text-xs flex items-center justify-between">
+              <span>GHN API Token</span>
+              <a href="https://sso.ghn.vn" target="_blank" rel="noreferrer" className="text-amber-400 hover:underline inline-flex items-center gap-1 text-[11px]">
+                Lấy token tại sso.ghn.vn <ExternalLink size={10} />
+              </a>
+            </label>
+            <input
+              type="password"
+              className="input text-xs font-mono"
+              placeholder="VD: 82a941-8219-410b-..."
+              value={courierConfig.apiToken}
+              onChange={e => {
+                const updated = { ...courierConfig, apiToken: e.target.value };
+                setCourierConfig(updated);
+                localStorage.setItem("tt_courierConfig", JSON.stringify(updated));
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 3. ĐỒNG BỘ ĐÁM MÂY ĐA THIẾT BỊ (SUPABASE CLOUD SYNC) */}
+      <div className="card space-y-4 border-indigo-900/40 bg-gradient-to-br from-gray-900 via-gray-900 to-indigo-950/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-800">
+          <div>
+            <h2 className="text-base font-semibold text-white flex items-center gap-2">
+              <Cloud size={18} className="text-indigo-400" /> Đồng Bộ Đám Mây Đa Thiết Bị (Supabase PostgreSQL)
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Đồng bộ dữ liệu thời gian thực (Realtime) giữa máy chủ shop ở nhà, máy nhân viên CSKH và máy quét kho.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleTestSupabase}
+              disabled={testingSupabase}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1.5 transition-colors"
+            >
+              <RefreshCw size={12} className={testingSupabase ? "animate-spin" : ""} />
+              {testingSupabase ? "Đang kiểm tra..." : "Kiểm tra kết nối"}
+            </button>
+          </div>
+        </div>
+
+        {supabaseTestResult && (
+          <div className={"p-3 rounded-xl border text-xs flex items-center gap-2 " + (supabaseTestResult.includes("thành công") ? "bg-emerald-950/40 border-emerald-800 text-emerald-300" : "bg-red-950/40 border-red-800 text-red-300")}>
+            {supabaseTestResult.includes("thành công") ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+            <span>{supabaseTestResult}</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div>
+            <label className="label text-xs">Supabase Project URL</label>
+            <input
+              className="input text-xs font-mono"
+              placeholder="VD: https://xyzcompany.supabase.co"
+              value={supabaseConfig.supabaseUrl}
+              onChange={e => {
+                const updated = { ...supabaseConfig, supabaseUrl: e.target.value };
+                setSupabaseConfig(updated);
+                localStorage.setItem("tt_supabaseConfig", JSON.stringify(updated));
+              }}
+            />
+          </div>
+          <div>
+            <label className="label text-xs">Supabase Anon Public Key</label>
+            <input
+              type="password"
+              className="input text-xs font-mono"
+              placeholder="VD: eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+              value={supabaseConfig.supabaseAnonKey}
+              onChange={e => {
+                const updated = { ...supabaseConfig, supabaseAnonKey: e.target.value };
+                setSupabaseConfig(updated);
+                localStorage.setItem("tt_supabaseConfig", JSON.stringify(updated));
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 4. CẦU NỐI KHÓA TỒN KHO AN TOÀN TIKTOK SHOP */}
+      <div className="card space-y-4 border-rose-900/40 bg-gradient-to-br from-gray-900 via-gray-900 to-rose-950/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-800">
+          <div>
+            <h2 className="text-base font-semibold text-white flex items-center gap-2">
+              <Video size={18} className="text-rose-400" /> Cầu Nối Khóa Tồn Kho An Toàn TikTok Shop Live
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Ngăn chặn bán vượt tồn kho (Overselling) khi đang livestream bùng nổ đơn hàng.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className={"text-xs font-semibold px-2.5 py-1 rounded-full border " + (tiktokBridge.autoLockLiveStock ? "bg-rose-900/50 text-rose-300 border-rose-800" : "bg-gray-800 text-gray-400 border-gray-700")}>
+              {tiktokBridge.autoLockLiveStock ? "✓ Khóa Tồn Kho Đang Bật" : "Đang Tắt"}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const updated = { ...tiktokBridge, autoLockLiveStock: !tiktokBridge.autoLockLiveStock };
+                setTiktokBridge(updated);
+                localStorage.setItem("tt_tiktokBridge", JSON.stringify(updated));
+              }}
+              className={"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out " + (tiktokBridge.autoLockLiveStock ? "bg-rose-600" : "bg-gray-700")}
+            >
+              <span className={"inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out " + (tiktokBridge.autoLockLiveStock ? "translate-x-5" : "translate-x-0")} />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <div>
+            <label className="label text-xs">Ngưỡng đệm tồn kho an toàn</label>
+            <input
+              type="number"
+              min={1}
+              className="input text-xs"
+              value={tiktokBridge.safetyBufferStock}
+              onChange={e => {
+                const updated = { ...tiktokBridge, safetyBufferStock: Number(e.target.value) };
+                setTiktokBridge(updated);
+                localStorage.setItem("tt_tiktokBridge", JSON.stringify(updated));
+              }}
+            />
+            <p className="text-[11px] text-gray-500 mt-1">Tự động khóa mua trên web khi kho ≤ số này</p>
+          </div>
+          <div>
+            <label className="label text-xs">TikTok App Key</label>
+            <input
+              className="input text-xs font-mono"
+              placeholder="VD: 6a82194..."
+              value={tiktokBridge.appKey}
+              onChange={e => {
+                const updated = { ...tiktokBridge, appKey: e.target.value };
+                setTiktokBridge(updated);
+                localStorage.setItem("tt_tiktokBridge", JSON.stringify(updated));
+              }}
+            />
+          </div>
+          <div>
+            <label className="label text-xs">TikTok Shop Cipher</label>
+            <input
+              className="input text-xs font-mono"
+              placeholder="VD: VNLCZ8194..."
+              value={tiktokBridge.shopCipher}
+              onChange={e => {
+                const updated = { ...tiktokBridge, shopCipher: e.target.value };
+                setTiktokBridge(updated);
+                localStorage.setItem("tt_tiktokBridge", JSON.stringify(updated));
+              }}
+            />
           </div>
         </div>
       </div>

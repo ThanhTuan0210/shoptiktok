@@ -77,10 +77,10 @@ export default function PrintShippingModal({
                   </div>
                   <div className="text-right">
                     <div className="inline-block px-3 py-1 bg-emerald-600 text-white text-xs font-black rounded uppercase tracking-wider">
-                      {order.shippingCarrier || "GHTK"} EXPRESS
+                      {order.carrierName || order.shippingCarrier || "GHN"} EXPRESS
                     </div>
                     <p className="text-[10px] text-gray-500 mt-1">Ngày tạo: {formatDate(order.orderDate)}</p>
-                    <p className="text-xs font-mono font-bold text-gray-900">Mã đơn: #{order.id.slice(-8).toUpperCase()}</p>
+                    <p className="text-xs font-mono font-bold text-gray-900">{order.carrierTrackingCode ? `Bưu cục: ${order.carrierTrackingCode}` : `Mã đơn: #${order.id.slice(-8).toUpperCase()}`}</p>
                   </div>
                 </div>
 
@@ -96,7 +96,7 @@ export default function PrintShippingModal({
                     ))}
                   </div>
                   <span className="font-mono text-xs font-bold tracking-widest mt-1 text-gray-800">
-                    *{order.id.toUpperCase()}*
+                    *{order.carrierTrackingCode || order.id.toUpperCase()}*
                   </span>
                 </div>
 

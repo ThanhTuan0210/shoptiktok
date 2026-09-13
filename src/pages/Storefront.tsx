@@ -16,6 +16,9 @@ import type { PromoSettings } from "../types";
 import { DEFAULT_PROMO_SETTINGS } from "../types";
 import FloatingContact from "../components/ui/FloatingContact";
 import WebShield from "../components/ui/WebShield";
+import { verifyPayment, simulateIncomingPayment } from "../services/paymentGateway";
+import type { PaymentGatewayConfig } from "../types";
+import { DEFAULT_PAYMENT_GATEWAY_CONFIG } from "../types";
 import { playOrderChime } from "../utils/audioAlert";
 
 interface CartItem {
@@ -181,6 +184,16 @@ export default function Storefront() {
 
   // Checkout
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [bankPaymentVerified, setBankPaymentVerified] = useState<boolean>(false);
+  const [paymentTxId, setPaymentTxId] = useState<string>("");
+  const [paymentCountdown, setPaymentCountdown] = useState<number>(600); // 10 minutes
+  const [paymentConfig] = useState<PaymentGatewayConfig>(() => {
+    try {
+      const saved = localStorage.getItem("tt_paymentGateway");
+      if (saved) return { ...DEFAULT_PAYMENT_GATEWAY_CONFIG, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_PAYMENT_GATEWAY_CONFIG;
+  });
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>("cart");
   const [checkoutForm, setCheckoutForm] = useState({
     name: "",
@@ -223,6 +236,40 @@ export default function Storefront() {
 
   useEffect(() => { setActiveImageIdx(0); setSelectedVariant(null); }, [selectedProduct]);
   useEffect(() => { if (!isCheckoutOpen) { setCheckoutStep("cart"); } }, [isCheckoutOpen]);
+
+  // VietQR Real-Time Polling Verification & Countdown
+  useEffect(() => {
+    if (checkoutStep !== "success" || !placedOrder || paymentMethod !== "bank_transfer" || bankPaymentVerified) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setPaymentCountdown(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    const poller = setInterval(async () => {
+      try {
+        const result = await verifyPayment(placedOrder.orderId, placedOrder.total, paymentConfig);
+        if (result.verified) {
+          setBankPaymentVerified(true);
+          setPaymentTxId(result.transactionId || "");
+          try { playOrderChime(); } catch {}
+          await db.orders.update(placedOrder.orderId, {
+            status: "processing",
+            paymentProofTxId: result.transactionId,
+            updatedAt: now(),
+          });
+        }
+      } catch (e) {
+        console.warn("[VietQR Polling] Check failed:", e);
+      }
+    }, 1500);
+
+    return () => {
+      clearInterval(timer);
+      clearInterval(poller);
+    };
+  }, [checkoutStep, placedOrder, paymentMethod, bankPaymentVerified, paymentConfig]);
 
   const productStats = useMemo<Record<string, ProductStats>>(() => {
     const s: Record<string, ProductStats> = {};
@@ -1387,17 +1434,60 @@ export default function Storefront() {
                   </div>
 
                   {paymentMethod === "bank_transfer" && qrUrl && (
-                    <div className="bg-white rounded-2xl border border-emerald-200 p-4 text-center space-y-3 shadow-sm">
-                      <div className="flex items-center justify-center gap-1.5 text-emerald-700 font-bold text-xs">
-                        <QrCode size={16}/> Quét mã VietQR để thanh toán
-                      </div>
-                      <img src={qrUrl} alt="VietQR" className="mx-auto rounded-xl border border-gray-200 max-w-[220px] shadow-sm"/>
-                      <div className="bg-gray-50 rounded-xl p-3 text-left space-y-1.5 text-[11px]">
-                        <div className="flex justify-between"><span className="text-gray-500">Ngân hàng:</span><span className="font-bold text-gray-900">{bankName}</span></div>
-                        <div className="flex justify-between items-center"><span className="text-gray-500">Số tài khoản:</span><span className="font-mono font-bold text-gray-900">{bankAccount}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">Chủ tài khoản:</span><span className="font-bold text-gray-900">{bankOwner}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">Nội dung CK:</span><span className="font-mono font-bold text-[#fe2c55]">DH {placedOrder.orderId}</span></div>
-                      </div>
+                    <div className="bg-white rounded-2xl border-2 border-emerald-500/40 p-4 text-center space-y-3 shadow-sm">
+                      {bankPaymentVerified ? (
+                        <div className="py-4 space-y-2 bg-emerald-50 rounded-xl border border-emerald-200">
+                          <div className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto animate-bounce">
+                            <Check size={24} />
+                          </div>
+                          <p className="font-bold text-emerald-800 text-sm">ĐÃ NHẬN TIỀN THÀNH CÔNG!</p>
+                          <p className="text-[11px] text-emerald-600">Mã GD ngân hàng: <strong className="font-mono">{paymentTxId}</strong></p>
+                          <span className="inline-block text-[10px] bg-emerald-600 text-white font-bold px-2.5 py-0.5 rounded-full">
+                            Đơn hàng đã được duyệt tự động sang kho đóng gói
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between text-xs pb-1 border-b border-gray-100">
+                            <span className="flex items-center gap-1.5 text-emerald-700 font-bold">
+                              <QrCode size={16}/> Quét mã VietQR thanh toán
+                            </span>
+                            <span className="text-[11px] font-mono font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                              ⏱️ Giữ hàng: {Math.floor(paymentCountdown / 60)}:{String(paymentCountdown % 60).padStart(2, '0')}
+                            </span>
+                          </div>
+
+                          <div className="relative inline-block">
+                            <img src={qrUrl} alt="VietQR" className="mx-auto rounded-xl border border-gray-200 max-w-[210px] shadow-sm"/>
+                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow whitespace-nowrap">
+                              VietQR Tự Động Điền Số Tiền
+                            </div>
+                          </div>
+
+                          <div className="bg-gray-50 rounded-xl p-3 text-left space-y-1.5 text-[11px] mt-2">
+                            <div className="flex justify-between"><span className="text-gray-500">Ngân hàng:</span><span className="font-bold text-gray-900">{bankName}</span></div>
+                            <div className="flex justify-between items-center"><span className="text-gray-500">Số tài khoản:</span><span className="font-mono font-bold text-gray-900">{bankAccount}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-500">Chủ tài khoản:</span><span className="font-bold text-gray-900">{bankOwner}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-500">Số tiền:</span><span className="font-bold text-[#fe2c55]">{formatCurrency(placedOrder.total)}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-500">Cú pháp CK:</span><span className="font-mono font-bold text-emerald-600">HENR {placedOrder.orderId}</span></div>
+                          </div>
+
+                          <div className="p-2.5 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center justify-between text-[11px] text-emerald-800">
+                            <span className="flex items-center gap-1.5 font-medium">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                              Đang kết nối cổng SePay đối soát...
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => simulateIncomingPayment(placedOrder.orderId, placedOrder.total, bankName)}
+                              className="text-[10px] text-emerald-700 underline font-bold hover:text-emerald-900 cursor-pointer"
+                              title="Bấm để kích hoạt giao dịch giả lập test"
+                            >
+                              [⚡ Test duyệt nhanh]
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
 

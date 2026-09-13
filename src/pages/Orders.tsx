@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { db } from "../db/database";
-import type { Order, OrderStatus, Return } from "../types";
+import type { Order, OrderStatus, Return, Product, ProductVariant, CourierConfig } from "../types";
+import { DEFAULT_COURIER_CONFIG } from "../types";
 import {
   Plus, Download, Upload, X,
   Eye, Edit2, Trash2, Package, Printer, Truck, Phone, MessageSquare, MessageSquareText, Scan, CheckCircle2, RotateCcw, XCircle
@@ -12,6 +13,9 @@ import EmptyState from "../components/ui/EmptyState";
 import PrintShippingModal from "../components/ui/PrintShippingModal";
 import QuickMessageModal from "../components/ui/QuickMessageModal";
 import BarcodeScannerModal from "../components/ui/BarcodeScannerModal";
+import PartialExchangeModal from "../components/orders/PartialExchangeModal";
+import { dispatchOrderToCourier } from "../services/courierGateway";
+import type { CourierConfig } from "../types";
 import {
   formatCurrency, formatDate, generateId, now, today,
   getOrderStatusLabel, getReturnReasonLabel, formatNumber, truncate
@@ -101,6 +105,34 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
   const [printOrders, setPrintOrders] = useState<Order[]>([]);
   const [quickMsgOrder, setQuickMsgOrder] = useState<Order | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [exchangeOrder, setExchangeOrder] = useState<Order | null>(null);
+  const [courierConfig] = useState<CourierConfig>(() => {
+    try {
+      const saved = localStorage.getItem("tt_courierConfig");
+    } catch {}
+  });
+
+  const handleDispatchGHN = async (orderToDispatch: Order) => {
+    try {
+      const result = await dispatchOrderToCourier(orderToDispatch, courierConfig);
+      if (result.success) {
+        await db.orders.update(orderToDispatch.id, {
+          carrierTrackingCode: result.trackingCode,
+          carrierName: result.carrierName,
+          carrierFee: result.estimatedFee,
+          carrierStatus: "ready_to_pick",
+          status: "processing",
+          updatedAt: now(),
+        });
+        alert(`🚀 ${result.message}\nMã vận đơn: ${result.trackingCode}\nCước ước tính: ${result.estimatedFee.toLocaleString('vi-VN')}đ`);
+        loadOrders();
+      }
+    } catch (e: any) {
+      alert("Lỗi khi kết nối bưu cục: " + (e?.message || "Vui lòng thử lại"));
+    }
+  };
   const [page, setPage] = useState(1);
   const PER_PAGE = 20;
 
@@ -118,12 +150,16 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
 
   async function loadOrders() {
     setLoading(true);
-    const [ordersData, returnsData] = await Promise.all([
+    const [ordersData, returnsData, productsData, variantsData] = await Promise.all([
       db.orders.orderBy("orderDate").reverse().toArray(),
       db.returns ? db.returns.toArray() : Promise.resolve([]),
+      db.products ? db.products.toArray() : Promise.resolve([]),
+      db.variants ? db.variants.toArray() : Promise.resolve([]),
     ]);
     setOrders(ordersData);
     setReturnsList(returnsData || []);
+    setProducts(productsData || []);
+    setVariants(variantsData || []);
     setLoading(false);
   }
 
@@ -747,6 +783,11 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                       {STATUSES.map(s => <option key={s} value={s} className="bg-gray-900 text-gray-100">{getOrderStatusLabel(s)}</option>)}
                     </select>
 
+                    {o.carrierTrackingCode && (
+                      <div className="mt-1 flex items-center gap-1 text-[10px] font-mono text-cyan-300 bg-cyan-950/40 border border-cyan-800/50 rounded px-1.5 py-0.5" title={o.carrierName || "Đơn vị vận chuyển"}>
+                        <Truck size={10} /> {o.carrierTrackingCode}
+                      </div>
+                    )}
                     {/* Compact Return Reason Badge */}
                     {(o.status === "returned" || o.status === "return_requested") && (() => {
                       const ret = returnsMap.get(o.id);
@@ -796,6 +837,22 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                           <CheckCircle2 size={12} /> Duyệt
                         </button>
                       )}
+                      {!o.carrierTrackingCode && o.status !== "cancelled" && (
+                        <button
+                          onClick={() => handleDispatchGHN(o)}
+                          className="p-1.5 text-gray-400 hover:text-amber-400 hover:bg-amber-900/20 rounded-lg transition-colors"
+                          title="Bắn đơn sang GHN lấy mã vận đơn bưu cục"
+                        >
+                          <Truck size={15} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setExchangeOrder(o)}
+                        className="p-1.5 text-gray-400 hover:text-cyan-400 hover:bg-cyan-900/20 rounded-lg transition-colors"
+                        title="Tách đơn đổi size 1 phần"
+                      >
+                        <RotateCcw size={15} />
+                      </button>
                       <button
                         onClick={() => setPrintOrders([o])}
                         className="p-1.5 text-gray-400 hover:text-emerald-400 hover:bg-emerald-900/20 rounded-lg transition-colors"
@@ -1149,7 +1206,19 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
         />
       )}
 
-            {/* Print Shipping Modal */}
+            {/* Partial Size Exchange Modal */}
+      <PartialExchangeModal
+        isOpen={!!exchangeOrder}
+        onClose={() => setExchangeOrder(null)}
+        order={exchangeOrder}
+        products={products}
+        variants={variants}
+        onExchangeComplete={() => {
+          loadOrders();
+        }}
+      />
+
+      {/* Print Shipping Modal */}
       {printOrders.length > 0 && (
         <PrintShippingModal
           orders={printOrders}
