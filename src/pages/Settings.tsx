@@ -25,6 +25,11 @@ export default function Settings() {
   const [bankOwner, setBankOwner] = useState(localStorage.getItem("tt_bankOwner") || "NGUYEN VAN A");
   const [shopPhone, setShopPhone] = useState(localStorage.getItem("tt_shopPhone") || "0988 234 567");
   const [adminPin, setAdminPin] = useState(localStorage.getItem("tt_adminPin") || "1234");
+  const [staffPin, setStaffPin] = useState(localStorage.getItem("tt_staffPin") || "0000");
+  const [autoLockMinutes, setAutoLockMinutes] = useState(localStorage.getItem("tt_autoLockMinutes") || "15");
+  const [lastBackupDate, setLastBackupDate] = useState(localStorage.getItem("tt_lastBackupDate") || "");
+  const [safeWipeInput, setSafeWipeInput] = useState("");
+  const [showSafeWipeModal, setShowSafeWipeModal] = useState(false);
   const [zaloPhone, setZaloPhone] = useState(localStorage.getItem("tt_zaloPhone") || "0988 234 567");
 
   useEffect(() => { loadSettings(); loadStats(); }, []);
@@ -75,6 +80,9 @@ export default function Settings() {
       db.stockMovements.toArray(), db.settings.toArray(),
     ]);
     exportDatabaseBackup({ products, productVariants: variants, orders, returns, defectiveItems: defective, expenses, stockMovements: movements, settings: settings2 });
+      const nowStr = new Date().toLocaleDateString("vi-VN");
+      localStorage.setItem("tt_lastBackupDate", nowStr);
+      setLastBackupDate(nowStr);
   }
 
   async function handleImportBackup(e: React.ChangeEvent<HTMLInputElement>) {
@@ -150,37 +158,71 @@ export default function Settings() {
         </div>
       </div>
 
-            {/* Admin Security Settings */}
+            {/* TẦNG 1: Admin Security & Role-Based Access Control */}
       <div className="card space-y-4">
-        <h2 className="text-base font-semibold text-white flex items-center gap-2">
-          <Lock size={18} className="text-amber-400" /> Bảo Mật & Mã PIN Quản Trị
-        </h2>
-        <p className="text-xs text-gray-400">
-          Mã PIN 4 số bảo vệ toàn bộ khu vực quản trị và dữ liệu kinh doanh (Doanh thu, Đơn hàng, Kho). Khách mua hàng chỉ xem được trang /shop.
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-base font-semibold text-white flex items-center gap-2">
+            <Lock size={18} className="text-amber-400" /> Bảo Mật, Phân Quyền & Mã PIN (Tầng 1)
+          </h2>
+          <span className="text-[11px] text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2 py-0.5 rounded-full font-medium">
+            ✓ 2 Lớp phân quyền kích hoạt
+          </span>
+        </div>
+        <p className="text-xs text-gray-400 leading-relaxed">
+          Hệ thống hỗ trợ 2 mã PIN riêng biệt: Mã Chủ shop (xem toàn bộ tài chính, CRM) và Mã Nhân viên đóng gói (chỉ thấy Đơn hàng & Kho, ẩn hoàn toàn doanh thu).
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="label">Mã PIN Quản trị (4 chữ số)</label>
+            <label className="label text-rose-400 font-semibold">Mã PIN Chủ Shop (Admin - Toàn quyền)</label>
             <input
               type="password"
               maxLength={4}
-              className="input font-mono tracking-widest text-base"
+              className="input font-mono tracking-widest text-base border-rose-500/40 focus:ring-rose-500"
               value={adminPin}
               onChange={e => setAdminPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-              placeholder="VD: 1234"
+              placeholder="1234"
             />
-            <p className="text-xs text-gray-500 mt-1">Mặc định ban đầu: <strong>1234</strong></p>
+            <p className="text-[11px] text-gray-500 mt-1">Toàn quyền xem doanh thu, P&L, cài đặt</p>
           </div>
+
           <div>
-            <label className="label">Số Zalo CSKH tư vấn</label>
+            <label className="label text-amber-400 font-semibold">Mã PIN Nhân Viên Kho (Staff)</label>
             <input
-              className="input"
-              value={zaloPhone}
-              onChange={e => setZaloPhone(e.target.value)}
-              placeholder="VD: 0988 234 567"
+              type="password"
+              maxLength={4}
+              className="input font-mono tracking-widest text-base border-amber-500/40 focus:ring-amber-500"
+              value={staffPin}
+              onChange={e => setStaffPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              placeholder="0000"
             />
-            <p className="text-xs text-gray-500 mt-1">Hiển thị ở nút bong bóng chat Zalo trang mua hàng</p>
+            <p className="text-[11px] text-gray-500 mt-1">Chỉ in vận đơn A6 và quét mã đóng gói</p>
           </div>
+
+          <div>
+            <label className="label text-blue-400 font-semibold">Tự động khóa màn hình (Auto-Lock)</label>
+            <select
+              value={autoLockMinutes}
+              onChange={e => setAutoLockMinutes(e.target.value)}
+              className="input text-xs"
+            >
+              <option value="5">Khóa sau 5 phút không dùng</option>
+              <option value="15">Khóa sau 15 phút (Khuyên dùng)</option>
+              <option value="30">Khóa sau 30 phút</option>
+              <option value="0">Tắt tự động khóa</option>
+            </select>
+            <p className="text-[11px] text-gray-500 mt-1">Tự động khóa bảo vệ khi rời bàn làm việc</p>
+          </div>
+        </div>
+
+        <div className="pt-2 border-t border-gray-800">
+          <label className="label">Số Zalo CSKH tư vấn trên Web</label>
+          <input
+            className="input max-w-sm"
+            value={zaloPhone}
+            onChange={e => setZaloPhone(e.target.value)}
+            placeholder="VD: 0988 234 567"
+          />
         </div>
       </div>
 

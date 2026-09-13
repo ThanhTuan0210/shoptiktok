@@ -86,6 +86,7 @@ export default function Header() {
   }, []);
 
   const unreadCount = notifications.length;
+  const isStaff = sessionStorage.getItem("tt_adminRole") === "staff";
 
   return (
     <header className="sticky top-0 z-30 border-b border-gray-800 px-6 py-3.5 flex items-center justify-between"
@@ -183,7 +184,9 @@ export default function Header() {
           </div>
           <div className="hidden sm:block">
             <p className="text-xs font-semibold text-white leading-tight">Henr.Studio</p>
-            <p className="text-[10px] text-gray-400 leading-tight">Chủ cửa hàng</p>
+            <p className={`text-[10px] font-semibold leading-tight ${isStaff ? "text-amber-400" : "text-rose-400"}`}>
+              {isStaff ? "Nhân viên đóng hàng" : "Chủ cửa hàng"}
+            </p>
           </div>
         </div>
         

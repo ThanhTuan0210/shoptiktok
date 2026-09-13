@@ -10,7 +10,14 @@ export default function Sidebar() {
   const location = useLocation();
   const [expanded, setExpanded] = useState(true);
 
-  const mainNav = [
+  const role = sessionStorage.getItem("tt_adminRole") || "admin";
+  const isStaff = role === "staff";
+
+  // For staff: only show Orders (packing/printing) and Inventory (stock check)
+  const mainNav = isStaff ? [
+    { to: "/orders", icon: ShoppingCart, label: "Đơn hàng (Đóng gói)" },
+    { to: "/inventory", icon: Package, label: "Sản phẩm & Tồn kho" },
+  ] : [
     { to: "/dashboard", icon: LayoutDashboard, label: "Tổng quan" },
     { to: "/orders", icon: ShoppingCart, label: "Đơn hàng" },
     { to: "/live", icon: Radio, label: "Phiên Live TikTok", isLive: true },
@@ -19,7 +26,7 @@ export default function Sidebar() {
     { to: "/issues", icon: RotateCcw, label: "Hoàn trả & Sự cố" },
   ];
 
-  const secondaryNav = [
+  const secondaryNav = isStaff ? [] : [
     { to: "/customers", icon: Users, label: "Khách hàng (CRM)" },
     { to: "/partners", icon: UserCheck, label: "Đối tác & KOLs" },
     { to: "/settings", icon: Settings, label: "Cài đặt hệ thống" },
@@ -128,7 +135,9 @@ export default function Sidebar() {
       <div className="p-3 border-t border-gray-800">
         <div className="bg-gray-800/40 rounded-lg p-2 text-center">
           <p className="text-xs text-gray-400 font-medium">Henr.Studio • Pyjama</p>
-          <p className="text-[11px] text-gray-500 mt-0.5">Hệ thống đang hoạt động</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">
+            {isStaff ? "👤 Nhân viên đóng hàng" : "👑 Quyền Chủ cửa hàng"}
+          </p>
         </div>
       </div>
     </aside>

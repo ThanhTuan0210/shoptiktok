@@ -149,6 +149,7 @@ export default function Storefront() {
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [isLuckyWheelOpen, setIsLuckyWheelOpen] = useState(false);
+  const [botTrap, setBotTrap] = useState("");
   const [selectedUpsells, setSelectedUpsells] = useState<Record<string, boolean>>({
     bang_do: false,
     tui_giat: false,
@@ -364,6 +365,24 @@ export default function Storefront() {
 
   const placeOrder = async () => {
     if (!canProceedToPayment || placing) return;
+
+    // 1. Honeypot Anti-Bot check (Tầng 3)
+    if (botTrap) {
+      console.warn("Spam bot detected via honeypot trap.");
+      setPlacedOrder({ orderId: "WEB-PROCESSED", total: finalTotal });
+      setCart([]);
+      return;
+    }
+
+    // 2. Rate Limiting: 20 seconds between orders from same browser
+    const lastOrderTs = parseInt(localStorage.getItem("tt_last_order_ts") || "0", 10);
+    const nowTs = Date.now();
+    if (nowTs - lastOrderTs < 20000) {
+      const waitSec = Math.ceil((20000 - (nowTs - lastOrderTs)) / 1000);
+      alert(`⚠️ Bạn vừa đặt đơn hàng cách đây ít giây. Vui lòng chờ ${waitSec} giây trước khi đặt đơn tiếp theo để tránh bị trùng lặp đơn!`);
+      return;
+    }
+
     setPlacing(true);
 
     // Kiểm tra tồn kho thời gian thực trước khi chốt đơn
@@ -433,6 +452,7 @@ export default function Storefront() {
     // Play upbeat order chime
     playOrderChime();
 
+    localStorage.setItem("tt_last_order_ts", Date.now().toString());
     setPlacedOrder({ orderId, total: finalTotal });
     setCart([]);
     setAppliedVoucher(null);
