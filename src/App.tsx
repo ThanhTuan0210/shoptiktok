@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+﻿import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Layout from "./components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
@@ -10,11 +10,12 @@ import Customers from "./pages/Customers";
 import Partners from "./pages/Partners";
 import Settings from "./pages/Settings";
 import Storefront from "./pages/Storefront";
+import TrackOrder from "./pages/TrackOrder";
 import { seedDatabase } from "./utils/seedData";
 import { db } from "./db/database";
 
-// Bộ ảnh Unsplash chất lượng cao cho từng sản phẩm Pyjama Henr.Studio
-// Mỗi sản phẩm có 1 ảnh chính + 3 ảnh phụ (góc độ khác nhau)
+// Bá»™ áº£nh Unsplash cháº¥t lÆ°á»£ng cao cho tá»«ng sáº£n pháº©m Pyjama Henr.Studio
+// Má»—i sáº£n pháº©m cÃ³ 1 áº£nh chÃ­nh + 3 áº£nh phá»¥ (gÃ³c Ä‘á»™ khÃ¡c nhau)
 const PRODUCT_IMAGES: Record<string, { main: string; extra: string[] }> = {
   "PJ-SOC-DEN-001": {
     main: "https://images.unsplash.com/photo-1571513800374-df1bbe650e56?w=600&q=85",
@@ -136,7 +137,7 @@ export default function App() {
       }
       await seedDatabase();
 
-      // Gán ảnh chất lượng cao cho tất cả sản phẩm (kể cả đã có ảnh cũ)
+      // GÃ¡n áº£nh cháº¥t lÆ°á»£ng cao cho táº¥t cáº£ sáº£n pháº©m (ká»ƒ cáº£ Ä‘Ã£ cÃ³ áº£nh cÅ©)
       const currentProducts = await db.products.toArray();
       for (const p of currentProducts) {
         const imgData = PRODUCT_IMAGES[p.sku];
@@ -150,7 +151,7 @@ export default function App() {
             });
           }
         } else if (!p.imageUrl) {
-          // Fallback cho sản phẩm chưa có ảnh
+          // Fallback cho sáº£n pháº©m chÆ°a cÃ³ áº£nh
           await db.products.update(p.id, {
             imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
           });
@@ -170,7 +171,7 @@ export default function App() {
         </div>
         <div style={{ textAlign: "center" }}>
           <p style={{ color: "white", fontWeight: "bold", fontSize: "18px", fontStyle: "italic", fontFamily: "Georgia, serif" }}>Henr.Studio</p>
-          <p style={{ color: "#6b7280", fontSize: "13px", marginTop: "4px" }}>Đang khởi động hệ thống...</p>
+          <p style={{ color: "#6b7280", fontSize: "13px", marginTop: "4px" }}>Äang khá»Ÿi Ä‘á»™ng há»‡ thá»‘ng...</p>
         </div>
       </div>
     );
@@ -179,6 +180,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/shop" element={<Storefront />} />
+      <Route path="/track" element={<TrackOrder />} />
       <Route path="/*" element={
         <Layout>
           <Routes>
