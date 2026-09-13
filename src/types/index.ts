@@ -143,6 +143,7 @@ export interface Order {
   shippingCarrier?: string;
   trackingNumber?: string;
   paymentMethod?: string;
+  liveSessionId?: string;
   note?: string;
   tiktokFeeRate?: number;
   tiktokFeeAmount?: number;
@@ -235,4 +236,37 @@ export interface FilterState {
   dateFrom?: string;
   dateTo?: string;
   category?: string;
+}
+
+// =====================
+// TIKTOK LIVE SESSION
+// =====================
+
+export type LiveSessionStatus = "scheduled" | "active" | "ended";
+
+export interface LivePinnedProduct {
+  pinNumber: number;
+  productId: string;
+  productName: string;
+  productSku: string;
+  imageUrl?: string;
+  originalPrice: number;
+  livePrice: number;
+  allocatedStock: number;
+  soldCount: number;
+}
+
+export interface LiveSession {
+  id: string;
+  title: string;
+  hostName: string;
+  status: LiveSessionStatus;
+  scheduledStartTime: string;
+  actualStartTime?: string;
+  actualEndTime?: string;
+  targetRevenue: number;
+  pinnedProducts: LivePinnedProduct[];
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
 }

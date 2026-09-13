@@ -1,7 +1,7 @@
 import Dexie, { type EntityTable } from "dexie";
 import type {
   Product, ProductVariant, StockMovement, Supplier,
-  Order, Return, DefectiveItem, Expense, AppSettings,
+  Order, Return, DefectiveItem, Expense, AppSettings, LiveSession
 } from "../types";
 
 export class TikTokShopDB extends Dexie {
@@ -14,19 +14,21 @@ export class TikTokShopDB extends Dexie {
   defectiveItems!: EntityTable<DefectiveItem, "id">;
   expenses!: EntityTable<Expense, "id">;
   settings!: EntityTable<AppSettings, "id">;
+  liveSessions!: EntityTable<LiveSession, "id">;
 
   constructor() {
     super("TikTokShopDB");
-    this.version(1).stores({
+    this.version(2).stores({
       products: "id, sku, name, category, isActive, createdAt",
       productVariants: "id, productId, sku, color, size, createdAt",
       stockMovements: "id, variantId, productId, type, date, referenceId, createdAt",
       suppliers: "id, name, createdAt",
-      orders: "id, tiktokOrderId, status, orderDate, customerName, createdAt",
+      orders: "id, tiktokOrderId, status, orderDate, customerName, liveSessionId, createdAt",
       returns: "id, orderId, status, returnDate, createdAt",
       defectiveItems: "id, productId, variantId, type, date, returnId, createdAt",
       expenses: "id, category, date, createdAt",
       settings: "++id",
+      liveSessions: "id, title, status, scheduledStartTime, createdAt",
     });
   }
 }

@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Layout from "./components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
+import LiveStudio from "./pages/LiveStudio";
 import Inventory from "./pages/Inventory";
 import OrdersWrapper from "./pages/OrdersWrapper";
 import FinanceWrapper from "./pages/FinanceWrapper";
@@ -96,6 +97,7 @@ export default function App() {
       <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
       <Route path="/inventory" element={<Layout><Inventory /></Layout>} />
       <Route path="/orders" element={<Layout><OrdersWrapper /></Layout>} />
+      <Route path="/live" element={<Layout><LiveStudio /></Layout>} />
       <Route path="/shipping" element={<Navigate to="/orders" replace />} />
       <Route path="/finance" element={<Layout><FinanceWrapper /></Layout>} />
       <Route path="/analytics" element={<Navigate to="/finance" replace />} />

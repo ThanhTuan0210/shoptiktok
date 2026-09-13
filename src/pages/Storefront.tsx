@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { db } from "../db/database";
-import type { Product, ProductVariant, Order } from "../types";
+import type { Product, ProductVariant, Order, LiveSession, LivePinnedProduct } from "../types";
 import {
   Search, ShoppingCart, Star, ShieldCheck, Zap,
   X, Check, ChevronRight, ChevronLeft, Trash2, Plus, Minus,
@@ -170,6 +170,7 @@ export default function Storefront() {
   const [bankAccount, setBankAccount] = useState(() => cleanStorage("tt_bankAccount", "1234567890"));
   const [bankOwner, setBankOwner] = useState(() => cleanStorage("tt_bankOwner", "NGUYEN VAN A"));
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [activeLiveSession, setActiveLiveSession] = useState<LiveSession | null>(null);
 
   useEffect(() => {
     document.title = `${shopName} | Cửa Hàng Đồ Ngủ & Pyjama Cao Cấp`;
@@ -177,7 +178,13 @@ export default function Storefront() {
       db.products.filter(p => p.isActive).toArray(),
       db.productVariants.toArray(),
       db.orders.toArray(),
-    ]).then(([prods, vars, ords]) => { setProducts(prods); setVariants(vars); setOrders(ords); });
+      db.liveSessions ? db.liveSessions.filter(s => s.status === "active").first() : Promise.resolve(undefined),
+    ]).then(([prods, vars, ords, live]) => {
+      setProducts(prods);
+      setVariants(vars);
+      setOrders(ords);
+      if (live) setActiveLiveSession(live);
+    });
   }, [shopName]);
 
   useEffect(() => { setActiveImageIdx(0); setSelectedVariant(null); }, [selectedProduct]);
@@ -243,7 +250,21 @@ export default function Storefront() {
     setIsAdminOpen(false);
   };
 
-  const cartTotal = cart.reduce((s, i) => s + i.product.sellingPrice * i.qty, 0);
+  const pinnedMap = useMemo(() => {
+    const map = new Map<string, LivePinnedProduct>();
+    if (activeLiveSession && activeLiveSession.status === "active") {
+      activeLiveSession.pinnedProducts.forEach(p => {
+        map.set(p.productId, p);
+      });
+    }
+    return map;
+  }, [activeLiveSession]);
+
+  const cartTotal = cart.reduce((s, i) => {
+    const isPinned = pinnedMap.has(i.productId);
+    const price = isPinned ? pinnedMap.get(i.productId)!.livePrice : i.product.sellingPrice;
+    return s + price * i.qty;
+  }, 0);
   const cartCount = cart.reduce((a, b) => a + b.qty, 0);
 
   // Voucher discount calculation
@@ -340,24 +361,29 @@ export default function Storefront() {
       total: finalTotal,
       shippingCarrier: "GHTK",
       trackingNumber: "",
-      note: `Đặt qua Website | Thanh toán: ${paymentMethod === "cod" ? "COD khi nhận" : "Chuyển khoản"}${appliedVoucher ? ` | Voucher: ${appliedVoucher.code} (-${formatCurrency(discountAmount)})` : ""}${checkoutForm.note ? ` | Ghi chú: ${checkoutForm.note}` : ""}`,
+      liveSessionId: activeLiveSession ? activeLiveSession.id : undefined,
+      note: `Đặt qua Website${activeLiveSession ? ` (Phiên Live: ${activeLiveSession.title})` : ""} | Thanh toán: ${paymentMethod === "cod" ? "COD khi nhận" : "Chuyển khoản"}${appliedVoucher ? ` | Voucher: ${appliedVoucher.code} (-${formatCurrency(discountAmount)})` : ""}${checkoutForm.note ? ` | Ghi chú: ${checkoutForm.note}` : ""}`,
       tiktokFeeRate: 0,
       tiktokFeeAmount: 0,
       paymentMethod,
       createdAt: now(),
       updatedAt: now(),
-      items: cart.map(item => ({
-        id: generateId(),
-        productId: item.productId,
-        variantId: item.variantId,
-        productName: item.product.name,
-        variantInfo: `${item.variant.color} - ${item.variant.size}`,
-        variantName: `${item.variant.color} - ${item.variant.size}`,
-        sku: item.variant.sku,
-        quantity: item.qty,
-        unitPrice: item.product.sellingPrice,
-        unitCost: item.product.costPrice || 0,
-      }))
+      items: cart.map(item => {
+        const isPinned = pinnedMap.has(item.productId);
+        const effectivePrice = isPinned ? pinnedMap.get(item.productId)!.livePrice : item.product.sellingPrice;
+        return {
+          id: generateId(),
+          productId: item.productId,
+          variantId: item.variantId,
+          productName: item.product.name,
+          variantInfo: `${item.variant.color} - ${item.variant.size}`,
+          variantName: `${item.variant.color} - ${item.variant.size}`,
+          sku: item.variant.sku,
+          quantity: item.qty,
+          unitPrice: effectivePrice,
+          unitCost: item.product.costPrice || 0,
+        };
+      })
     };
     await db.orders.add(newOrder);
     for (const item of cart) {
@@ -504,6 +530,33 @@ export default function Storefront() {
         </div>
       </header>
 
+      {/* Active TikTok Live Session Bar */}
+      {activeLiveSession && (
+        <div className="bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white px-4 py-2.5 shadow-md flex items-center justify-between text-xs md:text-sm font-medium animate-pulse border-b border-red-500">
+          <div className="max-w-6xl mx-auto w-full flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 overflow-hidden">
+              <span className="flex h-3 w-3 relative shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+              </span>
+              <span className="font-black tracking-wider uppercase text-[10px] md:text-[11px] bg-black/40 px-2 py-0.5 rounded shrink-0">
+                TIKTOK LIVE ĐANG DIỄN RA
+              </span>
+              <span className="font-bold truncate">{activeLiveSession.title}</span>
+              <span className="text-rose-100 hidden lg:inline text-xs">
+                (Host: {activeLiveSession.hostName} • Giá giảm sốc chỉ có trong phiên live!)
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="bg-white text-rose-600 px-3 py-1 rounded-full text-xs font-black shadow-sm flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
+                {pinnedMap.size} Sản phẩm ghim Deal Sốc
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Banner */}
       <div className="relative overflow-hidden bg-gradient-to-r from-rose-600 via-[#fe2c55] to-red-600 text-white py-8 md:py-12 px-4 shadow-inner">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
@@ -605,6 +658,7 @@ export default function Storefront() {
               const stats = productStats[product.id] || { totalSold: 0, totalStock: 0 };
               const rating = getRating(product.id);
               const img = getImg(product, idx);
+              const pinned = pinnedMap.get(product.id);
 
               return (
                 <div
@@ -623,6 +677,12 @@ export default function Storefront() {
                     <div className="absolute top-2 left-2 bg-[#fe2c55] text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm">
                       MALL
                     </div>
+                    {pinned && (
+                      <div className="absolute top-2 right-2 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md flex items-center gap-1 animate-pulse z-10">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                        Ghim #{pinned.pinNumber}
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-3 flex flex-col flex-1">
@@ -630,9 +690,21 @@ export default function Storefront() {
                       {product.name}
                     </h3>
                     <div className="mt-auto pt-1">
-                      <div className="text-sm md:text-base font-black text-[#fe2c55] leading-tight">
-                        {formatCurrency(product.sellingPrice)}
-                      </div>
+                      {pinned ? (
+                        <div>
+                          <div className="text-sm md:text-base font-black text-rose-600 leading-tight flex items-center gap-1.5 flex-wrap">
+                            <span>{formatCurrency(pinned.livePrice)}</span>
+                            <span className="text-[10px] bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded">Giá Live</span>
+                          </div>
+                          <div className="text-[11px] text-gray-400 line-through">
+                            {formatCurrency(product.sellingPrice)}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm md:text-base font-black text-[#fe2c55] leading-tight">
+                          {formatCurrency(product.sellingPrice)}
+                        </div>
+                      )}
                       <div className="flex items-center justify-between text-[10px] md:text-[11px] text-gray-500 mt-1.5">
                         <div className="flex items-center text-amber-500 font-semibold">
                           <Star size={11} fill="currentColor" className="mr-0.5" />
@@ -886,7 +958,15 @@ export default function Storefront() {
                                 <p className="text-xs font-bold text-gray-900 line-clamp-2 mb-0.5">{item.product.name}</p>
                                 <p className="text-[11px] text-gray-500 mb-2">{item.variant.color}, Size {item.variant.size}</p>
                                 <div className="flex items-center justify-between">
-                                  <p className="font-bold text-[#fe2c55] text-xs">{formatCurrency(item.product.sellingPrice)}</p>
+                                  {pinnedMap.has(item.productId) ? (
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <p className="font-bold text-rose-600 text-xs">{formatCurrency(pinnedMap.get(item.productId)!.livePrice)}</p>
+                                      <span className="text-[9px] bg-rose-100 text-rose-700 font-bold px-1 py-0.2 rounded">Live #{pinnedMap.get(item.productId)!.pinNumber}</span>
+                                      <span className="text-[10px] text-gray-400 line-through">{formatCurrency(item.product.sellingPrice)}</span>
+                                    </div>
+                                  ) : (
+                                    <p className="font-bold text-[#fe2c55] text-xs">{formatCurrency(item.product.sellingPrice)}</p>
+                                  )}
                                   <div className="flex items-center gap-1.5">
                                     <button onClick={() => updateQty(item.variantId, -1)} className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 text-gray-600"><Minus size={11}/></button>
                                     <span className="font-bold text-xs w-4 text-center">{item.qty}</span>

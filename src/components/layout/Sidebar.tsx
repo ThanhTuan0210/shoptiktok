@@ -3,7 +3,7 @@ import { NavLink, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, Package, ShoppingCart, DollarSign,
   ChevronDown, ChevronRight, Settings, RotateCcw,
-  Users, UserCheck, ExternalLink, Search
+  Users, UserCheck, ExternalLink, Search, Radio
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -13,6 +13,7 @@ export default function Sidebar() {
   const mainNav = [
     { to: "/dashboard", icon: LayoutDashboard, label: "Tổng quan" },
     { to: "/orders", icon: ShoppingCart, label: "Đơn hàng" },
+    { to: "/live", icon: Radio, label: "Phiên Live TikTok", isLive: true },
     { to: "/inventory", icon: Package, label: "Sản phẩm & Kho" },
     { to: "/finance", icon: DollarSign, label: "Tài chính & Báo cáo" },
     { to: "/issues", icon: RotateCcw, label: "Hoàn trả & Sự cố" },
@@ -64,12 +65,12 @@ export default function Sidebar() {
       <nav className="flex-1 px-3 py-2 overflow-y-auto">
         <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider px-3 mb-2">Tính năng chính</p>
         <ul className="space-y-1 mb-5">
-          {mainNav.map(({ to, icon: Icon, label }) => (
+          {mainNav.map(({ to, icon: Icon, label, isLive }: any) => (
             <li key={to}>
               <NavLink
                 to={to}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  `flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                     isActive ||
                     (to === '/orders' && location.pathname === '/shipping') ||
                     (to === '/finance' && location.pathname === '/analytics') ||
@@ -79,7 +80,15 @@ export default function Sidebar() {
                   }`
                 }
               >
-                <Icon size={18} /> {label}
+                <span className="flex items-center gap-3">
+                  <Icon size={18} className={isLive ? "text-rose-500 animate-pulse" : ""} /> {label}
+                </span>
+                {isLive && (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-600/90 text-white tracking-wider flex items-center gap-1 shadow-sm shadow-rose-900/50">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                    LIVE
+                  </span>
+                )}
               </NavLink>
             </li>
           ))}
