@@ -4,12 +4,14 @@ import { db } from "../db/database";
 import type { Order, OrderStatus, Return } from "../types";
 import {
   Plus, Download, Upload, X,
-  Eye, Edit2, Trash2, Package, Printer, Truck, Phone, MessageSquare, CheckCircle2, RotateCcw, XCircle
+  Eye, Edit2, Trash2, Package, Printer, Truck, Phone, MessageSquare, MessageSquareText, Scan, CheckCircle2, RotateCcw, XCircle
 } from "lucide-react";
 import Modal from "../components/ui/Modal";
 import SearchInput from "../components/ui/SearchInput";
 import EmptyState from "../components/ui/EmptyState";
 import PrintShippingModal from "../components/ui/PrintShippingModal";
+import QuickMessageModal from "../components/ui/QuickMessageModal";
+import BarcodeScannerModal from "../components/ui/BarcodeScannerModal";
 import {
   formatCurrency, formatDate, generateId, now, today,
   getOrderStatusLabel, getReturnReasonLabel, formatNumber, truncate
@@ -97,6 +99,8 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
   const [saving, setSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [printOrders, setPrintOrders] = useState<Order[]>([]);
+  const [quickMsgOrder, setQuickMsgOrder] = useState<Order | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [page, setPage] = useState(1);
   const PER_PAGE = 20;
 
@@ -405,6 +409,15 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
           <button onClick={() => exportOrdersToExcel(filtered)} className="btn-secondary text-xs">
             <Download size={15} /> Export Excel
           </button>
+          <button
+            type="button"
+            onClick={() => setIsScannerOpen(true)}
+            className="btn-secondary text-xs flex items-center gap-1.5 text-amber-400 border-amber-500/30 hover:bg-amber-500/10 transition-colors"
+            title="Quét mã vạch đóng gói đối soát"
+          >
+            <Scan size={15} />
+            <span>Quét mã đóng gói</span>
+          </button>
           <button onClick={() => { setEditOrder(emptyOrder); setIsEditing(false); setShowModal(true); }} className="btn-primary text-xs">
             <Plus size={15} /> Thêm đơn thủ công
           </button>
@@ -682,6 +695,15 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                           </svg>
                           <span>TikTok</span>
                         </a>
+                        <button
+                          type="button"
+                          onClick={() => setQuickMsgOrder(o)}
+                          className="text-[10px] text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1 transition-colors"
+                          title="Mở mẫu tin nhắn chăm sóc khách"
+                        >
+                          <MessageSquareText size={11} />
+                          <span>Mẫu</span>
+                        </button>
                       </div>
                     </div>
                   </td>
@@ -1070,6 +1092,13 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                   <span>Chat TikTok Shop</span>
                 </a>
                 <button
+                  type="button"
+                  onClick={() => setQuickMsgOrder(showDetail)}
+                  className="btn-secondary text-xs flex items-center gap-1 text-emerald-400 hover:text-emerald-300 border-emerald-500/30 bg-emerald-500/10"
+                >
+                  <MessageSquareText size={13} /> Mẫu tin nhắn
+                </button>
+                <button
                   onClick={() => {
                     setPrintOrders([showDetail]);
                     setShowDetail(null);
@@ -1087,7 +1116,40 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
         </Modal>
       )}
 
-      {/* Print Shipping Modal */}
+      {/* Quick Message Modal */}
+      {quickMsgOrder && (
+        <QuickMessageModal
+          isOpen={true}
+          onClose={() => setQuickMsgOrder(null)}
+          customerName={quickMsgOrder.customerName}
+          customerPhone={quickMsgOrder.customerPhone}
+          orderId={quickMsgOrder.id}
+          tiktokOrderId={quickMsgOrder.tiktokOrderId}
+          items={quickMsgOrder.items}
+          shippingCarrier={quickMsgOrder.shippingCarrier}
+          trackingNumber={quickMsgOrder.trackingNumber}
+          shopName="Henr.Studio"
+        />
+      )}
+
+      {/* Barcode Scanner & Packing Verification Modal */}
+      {isScannerOpen && (
+        <BarcodeScannerModal
+          isOpen={true}
+          onClose={() => setIsScannerOpen(false)}
+          orders={orders}
+          onOrderPacked={async (orderId: string) => {
+            await db.orders.update(orderId, {
+              status: "shipping",
+              shippingDate: today(),
+              updatedAt: now(),
+            });
+            await loadOrders();
+          }}
+        />
+      )}
+
+            {/* Print Shipping Modal */}
       {printOrders.length > 0 && (
         <PrintShippingModal
           orders={printOrders}

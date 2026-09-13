@@ -10,6 +10,8 @@ import {
 import { formatCurrency, generateId, now, today } from "../utils/helpers";
 import { useNavigate } from "react-router-dom";
 import SizeGuideModal from "../components/ui/SizeGuideModal";
+import SocialProofNotification from "../components/ui/SocialProofNotification";
+import LuckyWheelModal from "../components/ui/LuckyWheelModal";
 import FloatingContact from "../components/ui/FloatingContact";
 import { playOrderChime } from "../utils/audioAlert";
 
@@ -84,6 +86,13 @@ const AVAILABLE_VOUCHERS: Voucher[] = [
   { code: "FREESHIP", label: "Freeship", desc: "Miễn phí vận chuyển 25.000đ", discount: 25000, type: "fixed", minOrder: 0 },
   { code: "HENR50K", label: "Giảm 50K", desc: "Giảm 50.000đ cho đơn từ 599k", discount: 50000, type: "fixed", minOrder: 599000 },
   { code: "VIP10", label: "Giảm 10%", desc: "Giảm 10% tổng hóa đơn", discount: 0.1, type: "percent", minOrder: 0 },
+  { code: "GIAM20K", label: "Giảm 20K May Mắn", desc: "Giảm 20.000đ từ vòng quay may mắn", discount: 20000, type: "fixed", minOrder: 0 },
+  { code: "GIAM10%", label: "Giảm 10% May Mắn", desc: "Giảm 10% từ vòng quay may mắn", discount: 0.1, type: "percent", minOrder: 0 },
+  { code: "GIAM50K", label: "Giảm 50K May Mắn", desc: "Giảm 50.000đ từ vòng quay may mắn", discount: 50000, type: "fixed", minOrder: 499000 },
+  { code: "GIAM30K", label: "Giảm 30K May Mắn", desc: "Giảm 30.000đ từ vòng quay may mắn", discount: 30000, type: "fixed", minOrder: 349000 },
+  { code: "FREESHIP50", label: "Giảm 50% Ship", desc: "Giảm 15.000đ phí vận chuyển", discount: 15000, type: "fixed", minOrder: 0 },
+  { code: "PHUKIEN1K", label: "Băng Đô Lụa 1K", desc: "Giảm 44.000đ quà tặng băng đô", discount: 44000, type: "fixed", minOrder: 199000 },
+  { code: "VIP20K", label: "Tri Ân 20K", desc: "Voucher tri ân khách hàng thân thiết", discount: 20000, type: "fixed", minOrder: 0 },
 ];
 
 const FILTER_TABS = [
@@ -268,14 +277,29 @@ export default function Storefront() {
   const cartCount = cart.reduce((a, b) => a + b.qty, 0);
 
   // Voucher discount calculation
-  const discountAmount = useMemo(() => {
-    if (!appliedVoucher) return 0;
-    if (cartTotal < appliedVoucher.minOrder) return 0;
-    if (appliedVoucher.type === "percent") {
-      return Math.round(cartTotal * appliedVoucher.discount);
+  // Combo discount: If cart has >= 2 items, extra 5% off!
+  const comboDiscount = useMemo(() => {
+    const totalQty = cart.reduce((q, i) => q + i.quantity, 0);
+    if (totalQty >= 2) {
+      return Math.round(cartTotal * 0.05);
     }
-    return appliedVoucher.discount;
-  }, [appliedVoucher, cartTotal]);
+    return 0;
+  }, [cart, cartTotal]);
+
+  const discountAmount = useMemo(() => {
+    let amt = 0;
+    if (appliedVoucher) {
+      if (cartTotal >= appliedVoucher.minOrder) {
+        if (appliedVoucher.type === "percent") {
+          amt += Math.round(cartTotal * appliedVoucher.discount);
+        } else {
+          amt += appliedVoucher.discount;
+        }
+      }
+    }
+    amt += comboDiscount;
+    return amt;
+  }, [appliedVoucher, cartTotal, comboDiscount]);
 
   const finalTotal = Math.max(0, cartTotal - discountAmount);
 
@@ -894,7 +918,59 @@ export default function Storefront() {
                 )}
               </div>
 
-              {/* Action Buttons */}
+              {/* Upsell Deal Sốc Section */}
+              <div className="bg-rose-50/70 border border-rose-200/80 rounded-2xl p-3.5 space-y-2.5 mb-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-rose-700 flex items-center gap-1.5">
+                    🎁 Deal Sốc Mua Kèm Phụ Kiện Lụa (Tiết kiệm đến 60%):
+                  </span>
+                  <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                    Ưu đãi giới hạn
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  <label className="flex items-center justify-between p-2 rounded-xl bg-white border border-rose-100 hover:border-rose-300 cursor-pointer transition-all">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={!!selectedUpsells.bang_do}
+                        onChange={e => setSelectedUpsells(p => ({ ...p, bang_do: e.target.checked }))}
+                        className="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 cursor-pointer"
+                      />
+                      <div>
+                        <span className="font-semibold text-gray-800">Băng đô lụa Satin cao cấp</span>
+                        <span className="text-[10px] text-gray-400 block">Đồng màu ton-sur-ton với đồ ngủ</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-bold text-rose-600 font-mono">+19.000₫</span>
+                      <span className="text-[10px] text-gray-400 line-through block font-mono">45.000₫</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center justify-between p-2 rounded-xl bg-white border border-rose-100 hover:border-rose-300 cursor-pointer transition-all">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={!!selectedUpsells.tui_giat}
+                        onChange={e => setSelectedUpsells(p => ({ ...p, tui_giat: e.target.checked }))}
+                        className="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 cursor-pointer"
+                      />
+                      <div>
+                        <span className="font-semibold text-gray-800">Túi giặt đồ lụa chuyên dụng</span>
+                        <span className="text-[10px] text-gray-400 block">Bảo vệ sợi vải lụa không xước xơ</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-bold text-rose-600 font-mono">+29.000₫</span>
+                      <span className="text-[10px] text-gray-400 line-through block font-mono">60.000₫</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+                            {/* Action Buttons */}
               <div className="flex gap-3 mb-6">
                 <button
                   onClick={() => { if (selectedVariant) addToCart(selectedProduct, selectedVariant); }}
@@ -1357,7 +1433,43 @@ export default function Storefront() {
         </div>
       )}
 
-      {/* Size Guide Modal */}
+      {/* Social Proof Realtime Purchase Notifications */}
+      <SocialProofNotification orders={orders} />
+
+      {/* Floating Lucky Wheel Button */}
+      <button
+        type="button"
+        onClick={() => setIsLuckyWheelOpen(true)}
+        className="fixed right-4 bottom-20 sm:bottom-24 z-30 flex items-center gap-2 bg-gradient-to-r from-rose-600 via-pink-600 to-rose-600 text-white font-bold px-3.5 py-2.5 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all border-2 border-amber-300 animate-bounce cursor-pointer"
+        style={{
+          boxShadow: "0 10px 25px -5px rgba(244, 63, 94, 0.5), 0 8px 10px -6px rgba(244, 63, 94, 0.3)",
+        }}
+        title="Quay vòng quay may mắn nhận quà"
+      >
+        <span className="text-base">🎡</span>
+        <span className="text-xs font-extrabold hidden sm:inline">Vòng Quay May Mắn</span>
+        <span className="text-[10px] bg-amber-400 text-gray-900 px-1.5 py-0.5 rounded-full font-black">
+          100% Trúng
+        </span>
+      </button>
+
+      {/* Lucky Wheel Modal */}
+      {isLuckyWheelOpen && (
+        <LuckyWheelModal
+          isOpen={true}
+          onClose={() => setIsLuckyWheelOpen(false)}
+          onApplyVoucher={(code: string) => {
+            const found = AVAILABLE_VOUCHERS.find(v => v.code === code);
+            if (found) {
+              setAppliedVoucher(found);
+              setIsCheckoutOpen(true);
+              setCheckoutStep("cart");
+            }
+          }}
+        />
+      )}
+
+            {/* Size Guide Modal */}
       <SizeGuideModal
         isOpen={showSizeGuide}
         onClose={() => setShowSizeGuide(false)}

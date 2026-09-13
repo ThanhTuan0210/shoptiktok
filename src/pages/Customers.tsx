@@ -2,10 +2,11 @@ import { useEffect, useState, useMemo } from "react";
 import { db } from "../db/database";
 import type { Order } from "../types";
 import {
-  Users, Search, Phone, Eye, Star, Award, TrendingUp, MessageSquare, ExternalLink
+  Users, Search, Phone, Eye, Star, Award, TrendingUp, MessageSquare, MessageSquareText, ExternalLink
 } from "lucide-react";
 import { formatCurrency, formatDate, formatNumber } from "../utils/helpers";
 import Modal from "../components/ui/Modal";
+import QuickMessageModal from "../components/ui/QuickMessageModal";
 
 interface CustomerAggregated {
   key: string;
@@ -25,6 +26,7 @@ export default function Customers() {
   const [search, setSearch] = useState("");
   const [segmentFilter, setSegmentFilter] = useState<string>("all");
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerAggregated | null>(null);
+  const [quickMsgCustomer, setQuickMsgCustomer] = useState<CustomerAggregated | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -309,6 +311,14 @@ export default function Customers() {
                             <span>TikTok</span>
                           </a>
                           <button
+                            type="button"
+                            onClick={() => setQuickMsgCustomer(c)}
+                            className="px-2 py-1 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-colors inline-flex items-center gap-1 border border-emerald-500/20"
+                            title="Mẫu tin nhắn chăm sóc"
+                          >
+                            <MessageSquareText size={12} /> Mẫu
+                          </button>
+                          <button
                             onClick={() => setSelectedCustomer(c)}
                             className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
                             title="Xem lịch sử mua hàng"
@@ -372,6 +382,13 @@ export default function Customers() {
                   </svg>
                   <span>Chat TikTok Shop</span> <ExternalLink size={11} />
                 </a>
+                <button
+                  type="button"
+                  onClick={() => setQuickMsgCustomer(selectedCustomer)}
+                  className="btn bg-emerald-700 hover:bg-emerald-600 text-white text-xs py-1.5 px-3 flex items-center gap-1.5"
+                >
+                  <MessageSquareText size={13} /> Mẫu tin nhắn chăm sóc
+                </button>
               </div>
             </div>
 

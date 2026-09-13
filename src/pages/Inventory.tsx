@@ -4,9 +4,10 @@ import { db } from "../db/database";
 import type { Product, ProductVariant, StockMovement, StockMovementType } from "../types";
 import {
   Package, Plus, TrendingUp, X, Edit2, ChevronDown, ChevronRight,
-  Image as ImageIcon, Zap, AlertTriangle, CheckCircle2, XCircle, Video
+  Image as ImageIcon, Zap, Tag, AlertTriangle, CheckCircle2, XCircle, Video
 } from "lucide-react";
 import Modal from "../components/ui/Modal";
+import PrintBarcodeModal from "../components/ui/PrintBarcodeModal";
 import SearchInput from "../components/ui/SearchInput";
 import EmptyState from "../components/ui/EmptyState";
 import { formatCurrency, formatDate, formatNumber, generateId, now, today, getStockMovementLabel } from "../utils/helpers";
@@ -47,6 +48,7 @@ export default function Inventory() {
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showStockModal, setShowStockModal] = useState(false);
   const [showQuickRestock, setShowQuickRestock] = useState(false);
+  const [showPrintBarcode, setShowPrintBarcode] = useState(false);
   const [showAddVariant, setShowAddVariant] = useState<string | null>(null);
   const [showMovements, setShowMovements] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
