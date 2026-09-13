@@ -173,9 +173,26 @@ export default function Storefront() {
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="submit" className="flex-1 bg-[#fe2c55] text-white font-bold py-3 rounded-xl hover:bg-[#e62045] transition-colors">Lưu thay đổi</button>
-                <button type="button" onClick={() => navigate("/inventory")} className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors">Quản lý Kho</button>
               </div>
             </form>
+            <div className="border-t border-gray-100 mt-5 pt-4">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Quản trị viên</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => navigate("/dashboard")} className="flex items-center justify-center gap-2 bg-gray-900 text-white font-bold py-2.5 rounded-xl hover:bg-black transition-colors text-sm">
+                  📊 Dashboard
+                </button>
+                <button onClick={() => navigate("/inventory")} className="flex items-center justify-center gap-2 bg-gray-100 text-gray-800 font-bold py-2.5 rounded-xl hover:bg-gray-200 transition-colors text-sm">
+                  📦 Quản lý Kho
+                </button>
+                <button onClick={() => navigate("/orders")} className="flex items-center justify-center gap-2 bg-gray-100 text-gray-800 font-bold py-2.5 rounded-xl hover:bg-gray-200 transition-colors text-sm">
+                  🧾 Đơn hàng
+                </button>
+                <button onClick={() => navigate("/finance")} className="flex items-center justify-center gap-2 bg-gray-100 text-gray-800 font-bold py-2.5 rounded-xl hover:bg-gray-200 transition-colors text-sm">
+                  💰 Tài chính
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
@@ -310,7 +327,7 @@ export default function Storefront() {
               <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 z-10 w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-700 transition-colors">
                 <X size={18} />
               </button>
-              <button onClick={() => navigate("/inventory")} className="text-xs font-bold text-gray-400 hover:text-[#fe2c55] underline mb-3 self-start transition-colors">Sửa sản phẩm này</button>
+
 
               <div className="flex items-center gap-2 mb-2">
                 <span className="bg-[#fe2c55] text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase">Mall</span>
