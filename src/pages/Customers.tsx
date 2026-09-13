@@ -2,14 +2,13 @@ import { useEffect, useState, useMemo } from "react";
 import { db } from "../db/database";
 import type { Order } from "../types";
 import {
-  Users, Search, ShoppingBag, DollarSign, Calendar,
-  Phone, MapPin, Eye, Star, Award, TrendingUp, X
+  Users, Search, Phone, Eye, Star, Award, TrendingUp, MessageSquare, ExternalLink
 } from "lucide-react";
 import { formatCurrency, formatDate, formatNumber } from "../utils/helpers";
 import Modal from "../components/ui/Modal";
 
 interface CustomerAggregated {
-  key: string; // phone or name
+  key: string;
   name: string;
   phone: string;
   address: string;
@@ -101,19 +100,20 @@ export default function Customers() {
   const totalCustomers = customers.length;
   const vipCount = customers.filter(c => c.segment === "vip").length;
   const loyalCount = customers.filter(c => c.segment === "loyal").length;
+  const newCount = customers.filter(c => c.segment === "new").length;
   const totalRevenue = customers.reduce((s, c) => s + c.totalSpent, 0);
   const avgOrderValue = orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0;
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="space-y-5 animate-fade-in pb-12">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <Users size={22} className="text-rose-500" /> Quản lý Khách hàng (CRM)
+            <Users size={22} className="text-rose-500" /> Quản lý Khách hàng &amp; Chăm sóc (CRM)
           </h1>
           <p className="text-xs text-gray-400 mt-0.5">
-            Tổng hợp dữ liệu khách hàng từ tất cả đơn mua để chăm sóc & tiếp thị lại
+            Tổng hợp dữ liệu khách hàng từ tất cả đơn mua để gọi điện xác nhận, remarketing và tư vấn Zalo
           </p>
         </div>
       </div>
@@ -163,14 +163,14 @@ export default function Customers() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
             type="text"
-            placeholder="Tìm theo tên, SĐT, địa chỉ giao hàng..."
+            placeholder="Tìm theo tên khách, SĐT, địa chỉ giao hàng..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-rose-500"
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <button
             onClick={() => setSegmentFilter("all")}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
@@ -195,6 +195,14 @@ export default function Customers() {
           >
             Quen ({loyalCount})
           </button>
+          <button
+            onClick={() => setSegmentFilter("new")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              segmentFilter === "new" ? "bg-blue-500/20 text-blue-300 border border-blue-500/40" : "bg-gray-800 text-gray-400 hover:text-white"
+            }`}
+          >
+            Mới ({newCount})
+          </button>
         </div>
       </div>
 
@@ -216,59 +224,90 @@ export default function Customers() {
                   <th className="py-3 px-4 text-right">Tổng chi tiêu (LTV)</th>
                   <th className="py-3 px-4">Đơn gần nhất</th>
                   <th className="py-3 px-4 text-center">Phân hạng</th>
-                  <th className="py-3 px-4 text-center">Thao tác</th>
+                  <th className="py-3 px-4 text-center">Liên hệ &amp; Xem</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800 text-gray-200">
-                {filtered.map(c => (
-                  <tr key={c.key} className="hover:bg-gray-800/40 transition-colors">
-                    <td className="py-3 px-4 font-medium text-white flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-xs font-bold text-rose-400">
-                        {c.name.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="truncate max-w-[150px]">{c.name}</span>
-                    </td>
-                    <td className="py-3 px-4 text-gray-300 font-mono text-xs">{c.phone}</td>
-                    <td className="py-3 px-4 text-gray-400 text-xs truncate max-w-[200px]" title={c.address}>
-                      {c.address}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-gray-800 text-gray-200">
-                        {c.orderCount}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-right font-bold text-rose-400 text-sm">
-                      {formatCurrency(c.totalSpent)}
-                    </td>
-                    <td className="py-3 px-4 text-xs text-gray-400">{formatDate(c.lastOrderDate)}</td>
-                    <td className="py-3 px-4 text-center">
-                      {c.segment === "vip" && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                          ⭐ VIP
+                {filtered.map(c => {
+                  const cleanPhone = c.phone.replace(/\D/g, "");
+                  const hasPhone = cleanPhone.length >= 8;
+
+                  return (
+                    <tr key={c.key} className="hover:bg-gray-800/40 transition-colors">
+                      <td className="py-3 px-4 font-medium text-white flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-xs font-bold text-rose-400">
+                          {c.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="truncate max-w-[150px]">{c.name}</span>
+                      </td>
+                      <td className="py-3 px-4 text-gray-300 font-mono text-xs whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <span>{c.phone}</span>
+                          {hasPhone && (
+                            <a
+                              href={`tel:${c.phone}`}
+                              className="p-1 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded transition-colors"
+                              title="Gọi điện"
+                            >
+                              <Phone size={12} />
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-gray-400 text-xs truncate max-w-[200px]" title={c.address}>
+                        {c.address}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-gray-800 text-gray-200">
+                          {c.orderCount}
                         </span>
-                      )}
-                      {c.segment === "loyal" && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                          Khách quen
-                        </span>
-                      )}
-                      {c.segment === "new" && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-800 text-gray-400">
-                          Mới
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => setSelectedCustomer(c)}
-                        className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-                        title="Xem lịch sử mua hàng"
-                      >
-                        <Eye size={15} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-3 px-4 text-right font-bold text-rose-400 text-sm whitespace-nowrap">
+                        {formatCurrency(c.totalSpent)}
+                      </td>
+                      <td className="py-3 px-4 text-xs text-gray-400 whitespace-nowrap">{formatDate(c.lastOrderDate)}</td>
+                      <td className="py-3 px-4 text-center whitespace-nowrap">
+                        {c.segment === "vip" && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            ⭐ VIP
+                          </span>
+                        )}
+                        {c.segment === "loyal" && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                            Khách quen
+                          </span>
+                        )}
+                        {c.segment === "new" && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-800 text-gray-400">
+                            Mới
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1">
+                          {hasPhone && (
+                            <a
+                              href={`https://zalo.me/${cleanPhone}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-2 py-1 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors inline-flex items-center gap-1 border border-blue-500/20"
+                              title="Chat Zalo với khách"
+                            >
+                              <MessageSquare size={12} /> Zalo
+                            </a>
+                          )}
+                          <button
+                            onClick={() => setSelectedCustomer(c)}
+                            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                            title="Xem lịch sử mua hàng"
+                          >
+                            <Eye size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -284,6 +323,34 @@ export default function Customers() {
           size="lg"
         >
           <div className="space-y-4 text-sm">
+            {/* Contact Actions Header inside modal */}
+            <div className="flex items-center justify-between bg-rose-950/30 border border-rose-800/40 rounded-xl p-3.5 flex-wrap gap-2">
+              <div>
+                <p className="text-white font-semibold text-base">{selectedCustomer.name}</p>
+                <p className="text-xs text-gray-400 font-mono mt-0.5">{selectedCustomer.phone}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedCustomer.phone && selectedCustomer.phone !== "-" && (
+                  <>
+                    <a
+                      href={`tel:${selectedCustomer.phone}`}
+                      className="btn bg-rose-600 hover:bg-rose-500 text-white text-xs py-1.5 px-3 flex items-center gap-1.5"
+                    >
+                      <Phone size={13} /> Gọi điện ngay
+                    </a>
+                    <a
+                      href={`https://zalo.me/${selectedCustomer.phone.replace(/\D/g, "")}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn bg-blue-600 hover:bg-blue-500 text-white text-xs py-1.5 px-3 flex items-center gap-1.5"
+                    >
+                      <MessageSquare size={13} /> Nhắn tin Zalo <ExternalLink size={11} />
+                    </a>
+                  </>
+                )}
+              </div>
+            </div>
+
             {/* Summary card */}
             <div className="bg-gray-800/60 rounded-xl p-4 border border-gray-700 grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
@@ -309,7 +376,7 @@ export default function Customers() {
             <div>
               <p className="text-xs text-gray-400 mb-1">Địa chỉ giao hàng gần nhất:</p>
               <p className="text-xs text-gray-200 bg-gray-800/40 p-2.5 rounded-lg border border-gray-700">
-                {selectedCustomer.address}
+                📍 {selectedCustomer.address}
               </p>
             </div>
 
