@@ -5,7 +5,7 @@ import {
   Search, ShoppingCart, Star, ShieldCheck, Zap,
   X, Check, ChevronRight, ChevronLeft, Trash2, Plus, Minus,
   Truck, ArrowRight, Settings, Phone, QrCode, Copy,
-  CheckCircle2, Ruler, Ticket, SlidersHorizontal, Sparkles
+  CheckCircle2, Ruler, Ticket, SlidersHorizontal, Sparkles, ExternalLink, Play
 } from "lucide-react";
 import { formatCurrency, generateId, now, today } from "../utils/helpers";
 import { useNavigate } from "react-router-dom";
@@ -677,6 +677,14 @@ export default function Storefront() {
                     <div className="absolute top-2 left-2 bg-[#fe2c55] text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm">
                       MALL
                     </div>
+                    {product.tiktokVideoUrl && (
+                      <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm text-white text-[9px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm z-10">
+                        <svg className="w-2.5 h-2.5 fill-white" viewBox="0 0 24 24">
+                          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
+                        </svg>
+                        <span>Video Review</span>
+                      </div>
+                    )}
                     {pinned && (
                       <div className="absolute top-2 right-2 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md flex items-center gap-1 animate-pulse z-10">
                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
@@ -791,6 +799,62 @@ export default function Storefront() {
 
               <div className="text-2xl md:text-3xl font-black text-[#fe2c55] mb-4">
                 {formatCurrency(selectedProduct.sellingPrice)}
+              </div>
+
+              {/* Product Description & TikTok Video Link */}
+              <div className="mb-5 bg-gradient-to-br from-gray-50 to-rose-50/20 rounded-2xl p-4 border border-gray-100 text-xs text-gray-700 space-y-3 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 font-bold text-gray-900 uppercase tracking-wide text-[11px]">
+                    <Sparkles size={13} className="text-[#fe2c55]" /> Mô tả sản phẩm
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-medium font-mono">
+                    SKU: {selectedProduct.sku}
+                  </span>
+                </div>
+                
+                <p className="text-gray-600 leading-relaxed text-xs">
+                  {selectedProduct.description || "Bộ đồ ngủ pyjama thiết kế độc quyền từ Henr.Studio, chất liệu lụa satin cao cấp mềm mại, thoáng mát, đường may sắc nét và tôn dáng."}
+                </p>
+
+                {/* TikTok Video Review Link Below Description */}
+                {(selectedProduct.tiktokVideoUrl || true) && (
+                  <div className="pt-3 border-t border-gray-200/60">
+                    <a
+                      href={selectedProduct.tiktokVideoUrl || `https://www.tiktok.com/search?q=${encodeURIComponent(selectedProduct.name)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center justify-between p-3 bg-gradient-to-r from-gray-950 via-gray-900 to-black hover:from-rose-950 hover:via-black hover:to-rose-950 text-white rounded-xl border border-gray-800 hover:border-rose-500/80 shadow-md hover:shadow-rose-950/30 transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* TikTok Icon Badge */}
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#fe2c55] to-[#25f4ee] p-0.5 shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                          <div className="w-full h-full bg-black rounded-[6px] flex items-center justify-center">
+                            <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
+                            </svg>
+                          </div>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-xs text-white group-hover:text-rose-400 transition-colors">
+                              Xem Video Review Trên TikTok
+                            </span>
+                            <span className="text-[9px] bg-[#fe2c55] text-white px-1.5 py-0.2 rounded font-black tracking-wider uppercase animate-pulse">
+                              LIVE CLIP
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-400 truncate group-hover:text-gray-300">
+                            Mặc thử thực tế • Cận cảnh chất vải • Phối đồ
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs font-bold text-rose-400 group-hover:translate-x-1 transition-transform shrink-0 pl-2">
+                        <span className="hidden sm:inline">Xem video</span>
+                        <ExternalLink size={13} />
+                      </div>
+                    </a>
+                  </div>
+                )}
               </div>
 
               {/* Variant Selector & Size Guide Button */}

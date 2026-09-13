@@ -11,6 +11,8 @@ export const PRODUCTS = [
   {
     name: "Bộ Pyjama Sọc Kẻ Đen Trắng Lụa Satin",
     sku: "PJ-SOC-DEN-001",
+    description: "Bộ Pyjama sọc kẻ đen trắng kinh điển từ Henr.Studio, may bằng lụa Satin cao cấp 100D mềm mượt, rũ nhẹ, thoáng khí và nâng niu làn da. Phom dáng suông rộng rãi, cổ bẻ phối viền tinh tế, cúc bọc ngọc trai sang chảnh. Thích hợp mặc nhà, đi ngủ hoặc dạo phố nhẹ nhàng.",
+    tiktokVideoUrl: "https://www.tiktok.com/@henr.studio/video/7391823901234567891",
     category: "Pyjama Sọc Kẻ",
     costPrice: 145000,
     sellingPrice: 349000,
@@ -20,6 +22,8 @@ export const PRODUCTS = [
   {
     name: "Bộ Pyjama Sọc Kẻ Hồng Satin",
     sku: "PJ-SOC-HON-001",
+    description: "Tone hồng pastel ngọt ngào phối sọc trắng thanh lịch, tôn sáng da tự nhiên. Chất lụa satin dệt mật độ cao chống nhăn, mát lạnh chạm vào da. Thiết kế quần cạp chun co giãn êm ái, túi sâu tiện lợi để điện thoại.",
+    tiktokVideoUrl: "https://www.tiktok.com/@henr.studio/video/7391823901234567892",
     category: "Pyjama Sọc Kẻ",
     costPrice: 145000,
     sellingPrice: 349000,
@@ -29,6 +33,8 @@ export const PRODUCTS = [
   {
     name: "Bộ Pyjama Sọc Kẻ Nâu Đỏ Satin",
     sku: "PJ-SOC-NAU-001",
+    description: "Màu nâu đỏ quý phái chuẩn phong cách Parisian Chic. Lụa satin mềm như nhung, giữ độ bóng sáng sang trọng theo thời gian. Mặc lên vừa tôn dáng thon gọn vừa toát lên vẻ quyến rũ trưởng thành.",
+    tiktokVideoUrl: "https://www.tiktok.com/@henr.studio/video/7391823901234567893",
     category: "Pyjama Sọc Kẻ",
     costPrice: 145000,
     sellingPrice: 349000,
@@ -38,6 +44,8 @@ export const PRODUCTS = [
   {
     name: "Bộ Pyjama Sọc Kẻ Xanh Navy Satin",
     sku: "PJ-SOC-XAN-001",
+    description: "Xanh navy thanh lịch, trẻ trung phù hợp cả nam và nữ hoặc mặc đồ đôi. Chất satin mát rượi, thấm hút mồ hôi tốt, giặt máy giữ màu cực tốt không xù lông.",
+    tiktokVideoUrl: "https://www.tiktok.com/@henr.studio/video/7391823901234567894",
     category: "Pyjama Sọc Kẻ",
     costPrice: 145000,
     sellingPrice: 349000,
@@ -48,6 +56,8 @@ export const PRODUCTS = [
   {
     name: "Bộ Pyjama Trơn Lụa Cao Cấp",
     sku: "PJ-TRON-001",
+    description: "Bộ đồ ngủ lụa satin trơn màu tinh tế, tôn trọn nét đẹp tối giản Minimalism. Đường may cuốn biên giấu chỉ cao cấp từ xưởng may Henr.Studio, cúc khảm trai sắc nét.",
+    tiktokVideoUrl: "https://www.tiktok.com/@henr.studio/video/7391823901234567895",
     category: "Pyjama Trơn",
     costPrice: 130000,
     sellingPrice: 319000,
@@ -57,6 +67,8 @@ export const PRODUCTS = [
   {
     name: "Bộ Pyjama Trơn Cotton Thoáng Mát",
     sku: "PJ-TRON-COT-001",
+    description: "100% Cotton tự nhiên organic mềm mại, siêu thoáng mát và thấm hút mồ hôi tuyệt đối. Phom dáng basic dễ mặc hàng ngày, bền bỉ qua từng lần giặt.",
+    tiktokVideoUrl: "https://www.tiktok.com/@henr.studio/video/7391823901234567896",
     category: "Pyjama Trơn",
     costPrice: 115000,
     sellingPrice: 279000,
@@ -67,6 +79,8 @@ export const PRODUCTS = [
   {
     name: "Bộ Pyjama Ca Rô Vintage Satin",
     sku: "PJ-CARO-001",
+    description: "Họa tiết kẻ caro vintage thanh lịch mang hơi thở cổ điển châu Âu. Chất lụa satin nhẹ êm, lên dáng chuẩn chỉnh che khuyết điểm bụng cực tốt.",
+    tiktokVideoUrl: "https://www.tiktok.com/@henr.studio/video/7391823901234567897",
     category: "Pyjama Ca Rô",
     costPrice: 155000,
     sellingPrice: 369000,
@@ -76,6 +90,8 @@ export const PRODUCTS = [
   {
     name: "Bộ Pyjama Kẻ Ca Rô Flannel Mùa Đông",
     sku: "PJ-CARO-FLA-001",
+    description: "Vải nỉ dạ Flannel dày dặn êm ái, giữ nhiệt cực tốt cho những ngày se lạnh mùa đông. Họa tiết kẻ caro ấm cúng, thiết kế túi ốp ngực cổ điển.",
+    tiktokVideoUrl: "https://www.tiktok.com/@henr.studio/video/7391823901234567898",
     category: "Pyjama Ca Rô",
     costPrice: 170000,
     sellingPrice: 399000,
@@ -86,6 +102,8 @@ export const PRODUCTS = [
   {
     name: "Set Pyjama Ngắn Tay Lụa Satin",
     sku: "PJ-NGAN-001",
+    description: "Set cộc tay quần đùi lụa satin trẻ trung năng động cho mùa hè oi bức. Vải mỏng nhẹ mát lạnh, bay bổng, giúp giấc ngủ sâu và thư thái trọn vẹn.",
+    tiktokVideoUrl: "https://www.tiktok.com/@henr.studio/video/7391823901234567899",
     category: "Pyjama Ngắn Tay",
     costPrice: 120000,
     sellingPrice: 289000,
@@ -96,6 +114,8 @@ export const PRODUCTS = [
   {
     name: "Váy Ngủ Lụa Satin Cổ Chữ V",
     sku: "VN-LUA-001",
+    description: "Váy ngủ hai dây lụa satin cổ chữ V xẻ tinh tế, khoe khéo xương quai xanh quyến rũ. Dây áo điều chỉnh độ dài linh hoạt, lưng thun co giãn thoải mái.",
+    tiktokVideoUrl: "https://www.tiktok.com/@henr.studio/video/7391823901234567900",
     category: "Váy Ngủ",
     costPrice: 95000,
     sellingPrice: 229000,
@@ -106,6 +126,8 @@ export const PRODUCTS = [
   {
     name: "Áo Choàng Tắm Lông Cừu Cao Cấp",
     sku: "AC-LONG-001",
+    description: "Áo choàng tắm lông cừu nhung siêu mềm mịn, thấm nước tức thì sau khi tắm hoặc mặc giữ ấm buổi sáng/tối. Thiết kế đai thắt eo sang chảnh như resort 5 sao.",
+    tiktokVideoUrl: "https://www.tiktok.com/@henr.studio/video/7391823901234567901",
     category: "Áo Choàng",
     costPrice: 200000,
     sellingPrice: 469000,
@@ -116,6 +138,8 @@ export const PRODUCTS = [
   {
     name: "Quần Pyjama Lụa Satin Rời",
     sku: "QP-LUA-001",
+    description: "Quần dài pyjama lụa satin bán lẻ tiện lợi, dễ phối cùng áo thun, áo croptop hoặc áo pyjama có sẵn. Ống suông rộng thoải mái vận động.",
+    tiktokVideoUrl: "https://www.tiktok.com/@henr.studio/video/7391823901234567902",
     category: "Quần Pyjama",
     costPrice: 75000,
     sellingPrice: 179000,
@@ -126,6 +150,8 @@ export const PRODUCTS = [
   {
     name: "Gift Set Pyjama Henr.Studio - Hộp Quà",
     sku: "GIFT-SET-001",
+    description: "Hộp quà tặng Pyjama Henr.Studio cao cấp gồm bộ pyjama lụa, bịt mắt ngủ cùng tone, túi thơm thảo mộc và thiệp viết tay trong hộp cứng phủ ruy băng sang trọng.",
+    tiktokVideoUrl: "https://www.tiktok.com/@henr.studio/video/7391823901234567903",
     category: "Gift Set",
     costPrice: 290000,
     sellingPrice: 649000,
@@ -183,6 +209,8 @@ export async function seedDatabase() {
       name: p.name,
       sku: p.sku,
       category: p.category,
+      description: (p as any).description,
+      tiktokVideoUrl: (p as any).tiktokVideoUrl,
       costPrice: p.costPrice,
       sellingPrice: p.sellingPrice,
       lowStockThreshold: 15,

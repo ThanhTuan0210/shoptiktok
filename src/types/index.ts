@@ -66,6 +66,7 @@ export interface Product {
   description?: string;
   imageUrl?: string;
   additionalImages?: string[];
+  tiktokVideoUrl?: string;
   costPrice: number;
   sellingPrice: number;
   lowStockThreshold: number;

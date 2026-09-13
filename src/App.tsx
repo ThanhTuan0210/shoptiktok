@@ -54,6 +54,26 @@ export default function App() {
         // Assign clean local product photos for all 13 products
         const imgMap = productImages as Record<string, { main: string; extra: string[] }>;
 
+
+        // Sync description and tiktokVideoUrl for all products
+        if (PRODUCTS) {
+          for (const p of currentProducts) {
+            const seed = PRODUCTS.find(s => s.sku === p.sku) as any;
+            if (seed) {
+              const updates: any = {};
+              if (!p.description || p.description !== seed.description) {
+                updates.description = seed.description;
+              }
+              if (!p.tiktokVideoUrl || p.tiktokVideoUrl !== seed.tiktokVideoUrl) {
+                updates.tiktokVideoUrl = seed.tiktokVideoUrl;
+              }
+              if (Object.keys(updates).length > 0) {
+                await db.products.update(p.id, updates);
+              }
+            }
+          }
+        }
+
         for (const p of currentProducts) {
           const imgData = imgMap[p.sku];
           if (imgData) {

@@ -4,7 +4,7 @@ import { db } from "../db/database";
 import type { Product, ProductVariant, StockMovement, StockMovementType } from "../types";
 import {
   Package, Plus, TrendingUp, X, Edit2, ChevronDown, ChevronRight,
-  Image as ImageIcon, Zap, AlertTriangle, CheckCircle2, XCircle
+  Image as ImageIcon, Zap, AlertTriangle, CheckCircle2, XCircle, Video
 } from "lucide-react";
 import Modal from "../components/ui/Modal";
 import SearchInput from "../components/ui/SearchInput";
@@ -28,7 +28,7 @@ const CATEGORIES = [
 
 const emptyProduct = {
   name: "", sku: "", category: CATEGORIES[0], costPrice: 0,
-  sellingPrice: 0, lowStockThreshold: 10, description: "",
+  sellingPrice: 0, lowStockThreshold: 10, description: "", tiktokVideoUrl: "",
   imageUrl: "", additionalImages: ["", "", ""]
 };
 
@@ -126,6 +126,7 @@ export default function Inventory() {
       sellingPrice: p.sellingPrice,
       lowStockThreshold: p.lowStockThreshold,
       description: p.description || "",
+      tiktokVideoUrl: p.tiktokVideoUrl || "",
       imageUrl: p.imageUrl || "",
       additionalImages: [
         (p.additionalImages as string[])?.[0] || "",
@@ -195,6 +196,7 @@ export default function Inventory() {
       sellingPrice: newProduct.sellingPrice,
       lowStockThreshold: newProduct.lowStockThreshold,
       description: newProduct.description,
+      tiktokVideoUrl: newProduct.tiktokVideoUrl?.trim() || undefined,
       imageUrl: newProduct.imageUrl.trim() || undefined,
       additionalImages: cleanedAddImages,
       updatedAt: now(),
@@ -425,6 +427,18 @@ export default function Inventory() {
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <p className="font-semibold text-white text-base truncate">{product.name}</p>
                     <span className="badge-blue">{product.category}</span>
+                    {product.tiktokVideoUrl && (
+                      <a
+                        href={product.tiktokVideoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-950/50 text-rose-400 border border-rose-800/80 hover:bg-rose-900/60 hover:text-rose-200 transition-colors"
+                        title="Xem video TikTok"
+                      >
+                        <Video size={10} /> Video TikTok ↗
+                      </a>
+                    )}
                     {product.lowStock && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                         ⚠️ Sắp hết
@@ -732,6 +746,25 @@ export default function Inventory() {
             <textarea rows={3} className="input" value={newProduct.description}
               onChange={e => setNewProduct(p => ({ ...p, description: e.target.value }))}
               placeholder="Chất liệu lụa satin mềm mịn, thoáng mát..." />
+          </div>
+
+          <div>
+            <label className="label flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Video size={14} className="text-[#fe2c55]" /> Đường link Video TikTok sản phẩm
+              </span>
+              <span className="text-xs text-rose-400 font-normal">Video review / Mặc thử</span>
+            </label>
+            <input
+              type="url"
+              className="input text-sm"
+              value={(newProduct as any).tiktokVideoUrl || ""}
+              onChange={e => setNewProduct(p => ({ ...p, tiktokVideoUrl: e.target.value }))}
+              placeholder="https://www.tiktok.com/@henr.studio/video/..."
+            />
+            <p className="text-[11px] text-gray-500 mt-1">
+              Khách hàng xem sản phẩm sẽ thấy nút mở xem video review thực tế trên TikTok ngay dưới mô tả!
+            </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t border-gray-800">
