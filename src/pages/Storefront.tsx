@@ -148,6 +148,11 @@ export default function Storefront() {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [isLuckyWheelOpen, setIsLuckyWheelOpen] = useState(false);
+  const [selectedUpsells, setSelectedUpsells] = useState<Record<string, boolean>>({
+    bang_do: false,
+    tui_giat: false,
+  });
 
   // Vouchers
   const [voucherInput, setVoucherInput] = useState("");

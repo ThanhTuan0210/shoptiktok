@@ -316,6 +316,14 @@ export default function Inventory() {
           <button onClick={() => setShowMovements(true)} className="btn-secondary hidden sm:flex text-xs">
             <TrendingUp size={15} /> Lịch sử kho
           </button>
+          <button
+            type="button"
+            onClick={() => setShowPrintBarcode(true)}
+            className="btn-secondary text-xs flex items-center gap-1.5 text-purple-400 border-purple-500/30 hover:bg-purple-500/10"
+            title="In tem mã vạch dán túi zip"
+          >
+            <Tag size={15} /> In tem mã vạch
+          </button>
           <button onClick={openQuickRestock} className="btn bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm">
             <Zap size={15} /> Nhập hàng nhanh
           </button>
@@ -539,6 +547,16 @@ export default function Inventory() {
           </div>
         ))}
       </div>
+
+      {/* Print Barcode Modal */}
+      {showPrintBarcode && (
+        <PrintBarcodeModal
+          isOpen={true}
+          onClose={() => setShowPrintBarcode(false)}
+          products={products}
+          variants={products.flatMap(p => p.variants || [])}
+        />
+      )}
 
       {/* QUICK RESTOCK MODAL (NHẬP HÀNG NHANH) */}
       <Modal isOpen={showQuickRestock} onClose={() => setShowQuickRestock(false)} title="⚡ Nhập hàng nhanh vào kho" size="md">
