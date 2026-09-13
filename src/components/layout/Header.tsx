@@ -1,7 +1,9 @@
-import { Bell, Package, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { Bell, Package, AlertTriangle, CheckCircle2, Lock, Store } from "lucide-react";
+import { useLocation, Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { db } from "../../db/database";
+import { lockAdmin } from "./AdminGuard";
+import { playOrderChime } from "../../utils/audioAlert";
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   "/dashboard": { title: "Tổng quan hoạt động", subtitle: "Hiệu suất bán hàng Henr.Studio" },

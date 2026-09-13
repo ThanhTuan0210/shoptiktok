@@ -1,4 +1,4 @@
-﻿import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { formatCurrency, formatNumber } from "../../utils/helpers";
 

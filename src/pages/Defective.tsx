@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { db } from "../db/database";
 import type { DefectiveItem, DefectiveType } from "../types";
 import { AlertTriangle, Plus, Download, X, Eye, Trash2, TrendingDown } from "lucide-react";

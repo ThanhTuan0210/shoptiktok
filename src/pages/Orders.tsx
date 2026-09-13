@@ -359,6 +359,14 @@ export default function Orders() {
         <table className="table">
           <thead>
             <tr>
+              <th className="w-10 text-center">
+                <input
+                  type="checkbox"
+                  checked={paginated.length > 0 && paginated.every(o => selectedIds.includes(o.id))}
+                  onChange={handleSelectAll}
+                  className="rounded border-gray-700 bg-gray-800 text-[#fe2c55] focus:ring-[#fe2c55] cursor-pointer"
+                />
+              </th>
               <th>Mã đơn hàng</th>
               <th>Ngày đặt</th>
               <th>Khách hàng</th>
@@ -371,11 +379,19 @@ export default function Orders() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} className="text-center py-10 text-gray-500">Đang tải dữ liệu đơn hàng...</td></tr>
+              <tr><td colSpan={9} className="text-center py-10 text-gray-500">Đang tải dữ liệu đơn hàng...</td></tr>
             ) : paginated.length === 0 ? (
-              <tr><td colSpan={8} className="py-10"><EmptyState icon={Package} title="Không có đơn hàng nào" description="Thêm đơn mới hoặc điều chỉnh bộ lọc" /></td></tr>
+              <tr><td colSpan={9} className="py-10"><EmptyState icon={Package} title="Không có đơn hàng nào" description="Thêm đơn mới hoặc điều chỉnh bộ lọc" /></td></tr>
             ) : paginated.map(o => (
-              <tr key={o.id}>
+              <tr key={o.id} className={selectedIds.includes(o.id) ? "bg-rose-950/20" : ""}>
+                <td className="text-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(o.id)}
+                    onChange={() => handleToggleSelect(o.id)}
+                    className="rounded border-gray-700 bg-gray-800 text-[#fe2c55] focus:ring-[#fe2c55] cursor-pointer"
+                  />
+                </td>
                 <td className="font-mono text-xs font-semibold text-gray-300">
                   {o.tiktokOrderId || truncate(o.id, 14)}
                 </td>

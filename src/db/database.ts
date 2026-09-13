@@ -1,4 +1,4 @@
-﻿import Dexie, { type EntityTable } from "dexie";
+import Dexie, { type EntityTable } from "dexie";
 import type {
   Product, ProductVariant, StockMovement, Supplier,
   Order, Return, DefectiveItem, Expense, AppSettings,

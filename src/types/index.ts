@@ -142,6 +142,7 @@ export interface Order {
   total: number;
   shippingCarrier?: string;
   trackingNumber?: string;
+  paymentMethod?: string;
   note?: string;
   tiktokFeeRate?: number;
   tiktokFeeAmount?: number;

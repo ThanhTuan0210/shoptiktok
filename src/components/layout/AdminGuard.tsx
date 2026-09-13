@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { ShieldCheck, Lock, ArrowRight, Store, AlertCircle } from "lucide-react";
+import { Lock, Store, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function isUserAdminAuthenticated(): boolean {

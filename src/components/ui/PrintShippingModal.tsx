@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { X, Printer, Package, Truck, Phone, MapPin, ShieldCheck } from "lucide-react";
+import { X, Printer } from "lucide-react";
 import type { Order } from "../../types";
 import { formatCurrency, formatDate } from "../../utils/helpers";
 
@@ -57,7 +57,7 @@ export default function PrintShippingModal({
 
         {/* Printable Area */}
         <div ref={printAreaRef} className="printable-labels p-6 bg-gray-100 max-h-[75vh] overflow-y-auto space-y-6">
-          {orders.map((order, index) => {
+          {orders.map((order) => {
             const isCOD = !order.paymentMethod || order.paymentMethod === "cod";
             return (
               <div

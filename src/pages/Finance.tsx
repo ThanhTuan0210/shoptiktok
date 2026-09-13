@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { db } from "../db/database";
 import type { Expense, ExpenseCategory } from "../types";
 import { DollarSign, Plus, Download, X, TrendingUp, TrendingDown, Trash2, Edit2 } from "lucide-react";

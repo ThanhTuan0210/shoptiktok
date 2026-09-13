@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { db } from "../db/database";
 import type { Return, ReturnReason, ReturnStatus } from "../types";
 import { RotateCcw, Plus, Download, X, Eye, Edit2, Trash2 } from "lucide-react";

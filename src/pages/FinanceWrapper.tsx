@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import Finance from "./Finance";
 import Analytics from "./Analytics";
 import { DollarSign, BarChart3 } from "lucide-react";

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { db } from "../db/database";
 import { BarChart3, Download, TrendingUp, TrendingDown, Package } from "lucide-react";
 import {

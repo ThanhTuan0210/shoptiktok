@@ -1,4 +1,4 @@
-import { X, Ruler, CheckCircle2, Sparkles, HeartHandshake } from "lucide-react";
+import { X, Ruler, Sparkles, HeartHandshake } from "lucide-react";
 
 interface SizeGuideModalProps {
   isOpen: boolean;

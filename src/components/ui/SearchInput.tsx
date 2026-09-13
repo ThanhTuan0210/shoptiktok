@@ -1,4 +1,4 @@
-﻿import { Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 interface SearchInputProps {
   value: string;
