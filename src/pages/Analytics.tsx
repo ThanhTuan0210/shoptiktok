@@ -50,7 +50,7 @@ export default function Analytics() {
     const curExpenses = allExpenses.filter(e => inRange(e.date, from, now));
 
     const revenue = curOrders.reduce((s, o) => s + o.total, 0);
-    const cogs = curOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + i.unitCost * i.quantity, 0), 0);
+    const cogs = curOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + (i.unitCost || 0) * i.quantity, 0), 0);
     const grossProfit = revenue - cogs;
     const totalExpenses = curExpenses.reduce((s, e) => s + e.amount, 0);
     const tiktokFees = curOrders.reduce((s, o) => s + (o.tiktokFeeAmount || 0), 0);
@@ -74,7 +74,7 @@ export default function Analytics() {
       const dayOrders = curOrders.filter(o => o.orderDate.startsWith(ds));
       const dayReturns = curReturns.filter(r => r.returnDate.startsWith(ds));
       const dayRevenue = dayOrders.reduce((s, o) => s + o.total, 0);
-      const dayCOGS = dayOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + i.unitCost * i.quantity, 0), 0);
+      const dayCOGS = dayOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + (i.unitCost || 0) * i.quantity, 0), 0);
       daily.push({
         date: format(day, period <= 14 ? "dd/MM" : "dd/MM"),
         revenue: dayRevenue,
@@ -94,7 +94,7 @@ export default function Analytics() {
         }
         prodSales[i.productId].qty += i.quantity;
         prodSales[i.productId].revenue += i.unitPrice * i.quantity;
-        prodSales[i.productId].margin += (i.unitPrice - i.unitCost) * i.quantity;
+        prodSales[i.productId].margin += (i.unitPrice - (i.unitCost || 0)) * i.quantity;
       });
     });
     const sellers = Object.values(prodSales)
@@ -293,3 +293,4 @@ export default function Analytics() {
     </div>
   );
 }
+

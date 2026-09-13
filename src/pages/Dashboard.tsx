@@ -74,11 +74,11 @@ export default function Dashboard() {
 
       const revenue = curOrders.reduce((s, o) => s + o.total, 0);
       const prevRevenue = prevOrders.reduce((s, o) => s + o.total, 0);
-      const cogs = curOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + i.unitCost * i.quantity, 0), 0);
+      const cogs = curOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + (i.unitCost || 0) * i.quantity, 0), 0);
       const grossProfit = revenue - cogs;
       const totalExpenses = curExpenses.reduce((s, e) => s + e.amount, 0);
       const netProfit = grossProfit - totalExpenses;
-      const prevNetProfit = prevOrders.reduce((s, o) => s + o.total, 0) - prevOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + i.unitCost * i.quantity, 0), 0);
+      const prevNetProfit = prevOrders.reduce((s, o) => s + o.total, 0) - prevOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + (i.unitCost || 0) * i.quantity, 0), 0);
 
       const shippingOrders = allOrders.filter(o => o.status === "shipping").length;
       const lowStock = allVariants.filter(v => v.stock <= 10).length;
@@ -303,3 +303,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

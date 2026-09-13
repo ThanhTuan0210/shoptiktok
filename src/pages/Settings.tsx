@@ -1,14 +1,13 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { db } from "../db/database";
 import type { AppSettings } from "../types";
-import { Settings as SettingsIcon, Save, Download, Upload, Trash2, RefreshCw, Database } from "lucide-react";
-import { formatCurrency, now } from "../utils/helpers";
+import { Settings as SettingsIcon, Save, Download, Upload, Trash2, Database, ShieldCheck, Banknote } from "lucide-react";
 import { exportDatabaseBackup } from "../utils/exportData";
 
 const defaultSettings: AppSettings = {
-  shopName: "Shop Thời Trang TikTok",
+  shopName: "Henr.Studio",
   currency: "VND",
-  tiktokFeeRate: 2.5,
+  tiktokFeeRate: 1.8,
   lowStockDefault: 10,
   shippingCostPerOrder: 25000,
 };
@@ -20,11 +19,22 @@ export default function Settings() {
   const [dbStats, setDbStats] = useState({ products: 0, orders: 0, returns: 0, expenses: 0, movements: 0 });
   const [resetting, setResetting] = useState(false);
 
+  // Bank settings from localStorage
+  const [bankName, setBankName] = useState(localStorage.getItem("tt_bankName") || "Vietcombank");
+  const [bankAccount, setBankAccount] = useState(localStorage.getItem("tt_bankAccount") || "1234567890");
+  const [bankOwner, setBankOwner] = useState(localStorage.getItem("tt_bankOwner") || "NGUYEN VAN A");
+  const [shopPhone, setShopPhone] = useState(localStorage.getItem("tt_shopPhone") || "0988 234 567");
+
   useEffect(() => { loadSettings(); loadStats(); }, []);
 
   async function loadSettings() {
     const s = await db.settings.toArray();
-    if (s.length > 0) setSettings(s[0]);
+    if (s.length > 0) {
+      setSettings(s[0]);
+    } else {
+      const initialName = localStorage.getItem("tt_shopName") || "Henr.Studio";
+      setSettings({ ...defaultSettings, shopName: initialName });
+    }
   }
 
   async function loadStats() {
@@ -43,6 +53,14 @@ export default function Settings() {
     } else {
       await db.settings.add(settings);
     }
+
+    // Sync to localStorage for Storefront
+    if (settings.shopName) localStorage.setItem("tt_shopName", settings.shopName);
+    localStorage.setItem("tt_shopPhone", shopPhone);
+    localStorage.setItem("tt_bankName", bankName);
+    localStorage.setItem("tt_bankAccount", bankAccount);
+    localStorage.setItem("tt_bankOwner", bankOwner);
+
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -60,7 +78,7 @@ export default function Settings() {
   async function handleImportBackup(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!confirm("Import sẽ xóa tất cả dữ liệu hiện tại và thay thế bằng dữ liệu từ file backup. Tiếp tục?")) return;
+    if (!confirm("Import sẽ thay thế tất cả dữ liệu hiện tại bằng dữ liệu từ file backup. Tiếp tục?")) return;
     try {
       const text = await file.text();
       const data = JSON.parse(text);
@@ -79,18 +97,18 @@ export default function Settings() {
         if (data.stockMovements) await db.stockMovements.bulkAdd(data.stockMovements);
         if (data.settings) await db.settings.bulkAdd(data.settings);
       });
-      alert("Import thành công!");
+      alert("Khôi phục dữ liệu thành công!");
       loadSettings();
       loadStats();
     } catch (err) {
-      alert("Lỗi khi import: " + err);
+      alert("Lỗi khi import file: " + err);
     }
     e.target.value = "";
   }
 
   async function handleResetData() {
-    if (!confirm("XÓA TOÀN BỘ DỮ LIỆU? Hành động này không thể hoàn tác!")) return;
-    if (!confirm("Xác nhận lần 2: Toàn bộ dữ liệu sẽ bị mất vĩnh viễn. Tiếp tục?")) return;
+    if (!confirm("CẢNH BÁO: XÓA TOÀN BỘ DỮ LIỆU? Hành động này không thể hoàn tác!")) return;
+    if (!confirm("Xác nhận lần 2: Tất cả đơn hàng, kho, doanh thu sẽ bị xóa sạch và reset lại. Tiếp tục?")) return;
     setResetting(true);
     await db.delete();
     window.location.reload();
@@ -99,45 +117,68 @@ export default function Settings() {
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl">
       <div>
-        <h1 className="page-title">Cài đặt</h1>
-        <p className="page-subtitle">Cấu hình hệ thống và quản lý dữ liệu</p>
+        <h1 className="page-title">Cài đặt Hệ thống</h1>
+        <p className="page-subtitle">Cấu hình thông tin cửa hàng, thanh toán và quản trị dữ liệu</p>
       </div>
 
       {/* Shop settings */}
       <div className="card space-y-4">
         <h2 className="text-base font-semibold text-white flex items-center gap-2">
-          <SettingsIcon size={18} className="text-rose-400" /> Thông tin shop
+          <SettingsIcon size={18} className="text-rose-400" /> Thông tin Cửa hàng
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="sm:col-span-2">
-            <label className="label">Tên shop</label>
-            <input className="input" value={settings.shopName} onChange={e => setSettings(p => ({ ...p, shopName: e.target.value }))} placeholder="Tên shop TikTok" />
+          <div>
+            <label className="label">Tên cửa hàng</label>
+            <input className="input" value={settings.shopName} onChange={e => setSettings(p => ({ ...p, shopName: e.target.value }))} placeholder="VD: Henr.Studio" />
           </div>
           <div>
-            <label className="label">Phí TikTok mặc định (%)</label>
+            <label className="label">Hotline / Zalo tư vấn</label>
+            <input className="input" value={shopPhone} onChange={e => setShopPhone(e.target.value)} placeholder="VD: 0988 234 567" />
+          </div>
+          <div>
+            <label className="label">Phí TikTok Shop (%)</label>
             <input type="number" step="0.1" className="input" value={settings.tiktokFeeRate} onChange={e => setSettings(p => ({ ...p, tiktokFeeRate: Number(e.target.value) }))} />
-            <p className="text-xs text-gray-500 mt-1">Phí hoa hồng nền tảng TikTok Shop tính trên doanh thu</p>
+            <p className="text-xs text-gray-500 mt-1">Phí hoa hồng nền tảng TikTok (thường từ 1.8% - 3%)</p>
           </div>
           <div>
-            <label className="label">Ngưỡng cảnh báo tồn kho (mặc định)</label>
+            <label className="label">Ngưỡng cảnh báo hết hàng (bộ)</label>
             <input type="number" className="input" value={settings.lowStockDefault} onChange={e => setSettings(p => ({ ...p, lowStockDefault: Number(e.target.value) }))} />
-            <p className="text-xs text-gray-500 mt-1">Cảnh báo khi số lượng ≤ ngưỡng này</p>
-          </div>
-          <div>
-            <label className="label">Chi phí ship trung bình/đơn</label>
-            <input type="number" className="input" value={settings.shippingCostPerOrder || 0} onChange={e => setSettings(p => ({ ...p, shippingCostPerOrder: Number(e.target.value) }))} />
-          </div>
-          <div>
-            <label className="label">Đơn vị tiền tệ</label>
-            <select className="input" value={settings.currency} onChange={e => setSettings(p => ({ ...p, currency: e.target.value }))}>
-              <option value="VND">VNĐ (Việt Nam đồng)</option>
-            </select>
+            <p className="text-xs text-gray-500 mt-1">Hệ thống sẽ báo động khi tồn kho ≤ số này</p>
           </div>
         </div>
-        <div className="flex justify-end">
+      </div>
+
+      {/* Bank settings */}
+      <div className="card space-y-4">
+        <h2 className="text-base font-semibold text-white flex items-center gap-2">
+          <Banknote size={18} className="text-blue-400" /> Thông tin Tài khoản Ngân hàng (VietQR)
+        </h2>
+        <p className="text-xs text-gray-400">
+          Thông tin này sẽ tự động tạo mã QR VietQR chuẩn để khách quét chuyển khoản khi đặt hàng trên Website.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="label">Ngân hàng</label>
+            <select className="input" value={bankName} onChange={e => setBankName(e.target.value)}>
+              {["Vietcombank", "Techcombank", "MB Bank", "VPBank", "ACB", "BIDV", "Agribank", "Sacombank", "TPBank", "VietinBank"].map(b => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label">Số tài khoản</label>
+            <input className="input" value={bankAccount} onChange={e => setBankAccount(e.target.value)} placeholder="VD: 1234567890" />
+          </div>
+          <div>
+            <label className="label">Tên chủ tài khoản</label>
+            <input className="input" value={bankOwner} onChange={e => setBankOwner(e.target.value)} placeholder="VD: NGUYEN VAN A" />
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-2">
           <button onClick={handleSave} disabled={saving} className={`btn-primary ${saved ? "bg-emerald-600 hover:bg-emerald-500" : ""}`}>
             <Save size={16} />
-            {saving ? "Đang lưu..." : saved ? "✓ Đã lưu!" : "Lưu cài đặt"}
+            {saving ? "Đang lưu..." : saved ? "✓ Đã lưu cài đặt!" : "Lưu tất cả cài đặt"}
           </button>
         </div>
       </div>
@@ -145,7 +186,7 @@ export default function Settings() {
       {/* Database stats */}
       <div className="card">
         <h2 className="text-base font-semibold text-white flex items-center gap-2 mb-4">
-          <Database size={18} className="text-blue-400" /> Thống kê cơ sở dữ liệu
+          <Database size={18} className="text-purple-400" /> Thống kê Cơ sở dữ liệu
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
@@ -166,27 +207,27 @@ export default function Settings() {
       {/* Backup & Restore */}
       <div className="card">
         <h2 className="text-base font-semibold text-white flex items-center gap-2 mb-4">
-          <Download size={18} className="text-emerald-400" /> Sao lưu & Khôi phục
+          <Download size={18} className="text-emerald-400" /> Sao lưu & Khôi phục Dữ liệu
         </h2>
         <div className="space-y-3">
           <div className="flex items-start gap-4 p-4 bg-gray-800 rounded-xl">
             <Download size={20} className="text-emerald-400 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="font-medium text-white text-sm">Xuất backup toàn bộ dữ liệu</p>
-              <p className="text-gray-400 text-xs mt-1">Tải về file JSON chứa tất cả dữ liệu. Dùng để backup hoặc chuyển sang thiết bị khác.</p>
+              <p className="font-medium text-white text-sm">Xuất file sao lưu (Backup)</p>
+              <p className="text-gray-400 text-xs mt-1">Tải về máy file JSON chứa toàn bộ dữ liệu đơn, kho, doanh thu. Dùng để lưu trữ an toàn hoặc chuyển máy khác.</p>
             </div>
             <button onClick={handleExportBackup} className="btn-success shrink-0 text-xs">
-              <Download size={14} /> Tải backup
+              <Download size={14} /> Tải file backup
             </button>
           </div>
           <div className="flex items-start gap-4 p-4 bg-gray-800 rounded-xl">
             <Upload size={20} className="text-blue-400 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="font-medium text-white text-sm">Khôi phục từ backup</p>
-              <p className="text-gray-400 text-xs mt-1">Import file JSON backup để khôi phục dữ liệu. <span className="text-amber-400">Sẽ xóa toàn bộ dữ liệu hiện tại.</span></p>
+              <p className="font-medium text-white text-sm">Khôi phục từ file sao lưu</p>
+              <p className="text-gray-400 text-xs mt-1">Nạp lại file JSON đã sao lưu trước đó để phục hồi dữ liệu vào hệ thống.</p>
             </div>
             <label className="btn-secondary shrink-0 cursor-pointer text-xs">
-              <Upload size={14} /> Chọn file
+              <Upload size={14} /> Chọn file JSON
               <input type="file" accept=".json" className="hidden" onChange={handleImportBackup} />
             </label>
           </div>
@@ -201,19 +242,13 @@ export default function Settings() {
         <div className="flex items-start gap-4 p-4 bg-red-950/30 border border-red-900/50 rounded-xl">
           <Trash2 size={20} className="text-red-400 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="font-medium text-white text-sm">Xóa toàn bộ dữ liệu</p>
-            <p className="text-gray-400 text-xs mt-1">Xóa VĨNH VIỄN tất cả dữ liệu bao gồm đơn hàng, tồn kho, tài chính. Không thể hoàn tác. Hãy backup trước!</p>
+            <p className="font-medium text-white text-sm">Xóa toàn bộ dữ liệu và reset</p>
+            <p className="text-gray-400 text-xs mt-1">Xóa toàn bộ dữ liệu hiện tại trong trình duyệt để đưa hệ thống về trạng thái ban đầu.</p>
           </div>
           <button onClick={handleResetData} disabled={resetting} className="btn-danger shrink-0 text-xs">
-            <Trash2 size={14} /> {resetting ? "Đang xóa..." : "Xóa tất cả"}
+            <Trash2 size={14} /> {resetting ? "Đang xóa..." : "Xóa & Reset"}
           </button>
         </div>
-      </div>
-
-      {/* Version info */}
-      <div className="text-center text-xs text-gray-600 pb-4">
-        <p>TikTok Shop Manager v1.0 • Dữ liệu lưu trên trình duyệt (IndexedDB)</p>
-        <p className="mt-1">Tương thích Chrome, Edge, Firefox • Không cần internet sau khi tải lần đầu</p>
       </div>
     </div>
   );

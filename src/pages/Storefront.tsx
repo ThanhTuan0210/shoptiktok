@@ -4,7 +4,7 @@ import type { Product, ProductVariant, Order } from "../types";
 import {
   ShoppingCart, Search, X, CheckCircle, Zap, Star, ShieldCheck,
   Settings, ChevronLeft, ChevronRight, Trash2, Plus, Minus,
-  Banknote, Truck, Copy, ExternalLink
+  Banknote, Truck, Copy, ExternalLink, Phone
 } from "lucide-react";
 import { formatCurrency, generateId, now, today } from "../utils/helpers";
 import { useNavigate } from "react-router-dom";
@@ -71,6 +71,7 @@ export default function Storefront() {
 
   // Shop settings
   const [shopName, setShopName] = useState(localStorage.getItem("tt_shopName") || "Henr.Studio");
+  const [shopPhone, setShopPhone] = useState(localStorage.getItem("tt_shopPhone") || "0988 234 567");
   const [bannerTitle, setBannerTitle] = useState(localStorage.getItem("tt_bannerTitle") || "SALE SẬP SÀN");
   const [bannerSub, setBannerSub] = useState(localStorage.getItem("tt_bannerSub") || "Miễn phí vận chuyển toàn quốc");
   const [bankName, setBankName] = useState(localStorage.getItem("tt_bankName") || "Vietcombank");
@@ -79,7 +80,7 @@ export default function Storefront() {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
 
   useEffect(() => {
-    document.title = `${shopName} | Cửa Hàng`;
+    document.title = `${shopName} | Cửa Hàng Đồ Ngủ & Pyjama`;
     Promise.all([
       db.products.filter(p => p.isActive).toArray(),
       db.productVariants.toArray(),
@@ -115,13 +116,13 @@ export default function Storefront() {
 
   const saveSettings = (e: React.FormEvent) => {
     e.preventDefault();
-    ["tt_shopName","tt_bannerTitle","tt_bannerSub","tt_bankName","tt_bankAccount","tt_bankOwner"].forEach(k => {
-      const vals: Record<string,string> = {
-        tt_shopName: shopName, tt_bannerTitle: bannerTitle, tt_bannerSub: bannerSub,
-        tt_bankName: bankName, tt_bankAccount: bankAccount, tt_bankOwner: bankOwner,
-      };
-      localStorage.setItem(k, vals[k]);
-    });
+    localStorage.setItem("tt_shopName", shopName);
+    localStorage.setItem("tt_shopPhone", shopPhone);
+    localStorage.setItem("tt_bannerTitle", bannerTitle);
+    localStorage.setItem("tt_bannerSub", bannerSub);
+    localStorage.setItem("tt_bankName", bankName);
+    localStorage.setItem("tt_bankAccount", bankAccount);
+    localStorage.setItem("tt_bankOwner", bankOwner);
     setIsAdminOpen(false);
   };
 
@@ -139,26 +140,31 @@ export default function Storefront() {
     setCart(prev => prev.map(i => i.variantId === variantId ? { ...i, qty: i.qty + delta } : i).filter(i => i.qty > 0));
   const removeItem = (variantId: string) => setCart(prev => prev.filter(i => i.variantId !== variantId));
 
-  const canProceedToPayment = checkoutForm.name.trim() && checkoutForm.phone.trim() && checkoutForm.address.trim();
+  const isValidPhone = (p: string) => {
+    const digits = p.replace(/\D/g, "");
+    return digits.length >= 9 && digits.length <= 11;
+  };
+
+  const canProceedToPayment = checkoutForm.name.trim() && isValidPhone(checkoutForm.phone) && checkoutForm.address.trim();
 
   const placeOrder = async () => {
     if (!canProceedToPayment || placing) return;
     setPlacing(true);
     const orderId = "WEB-" + Math.random().toString(36).substr(2, 8).toUpperCase();
-    const newOrder = {
+    const newOrder: any = {
       id: generateId(),
       tiktokOrderId: orderId,
       customerName: checkoutForm.name,
       customerPhone: checkoutForm.phone,
       customerAddress: checkoutForm.address,
-      status: "pending" as const,
+      status: "pending",
       orderDate: today(),
       subtotal: cartTotal,
       shippingFee: 0,
       total: cartTotal,
       shippingCarrier: "GHTK",
       trackingNumber: "",
-      note: `Đặt qua Website | Thanh toán: ${paymentMethod === "cod" ? "COD" : "Chuyển khoản"}`,
+      note: `Đặt qua Website | Thanh toán: ${paymentMethod === "cod" ? "COD khi nhận" : "Chuyển khoản"}`,
       tiktokFeeRate: 0,
       tiktokFeeAmount: 0,
       paymentMethod,
@@ -169,18 +175,25 @@ export default function Storefront() {
         productId: item.productId,
         variantId: item.variantId,
         productName: item.product.name,
-        variantName: item.variant.color + " - " + item.variant.size,
+        variantInfo: `${item.variant.color} - ${item.variant.size}`,
+        variantName: `${item.variant.color} - ${item.variant.size}`,
         sku: item.variant.sku,
         quantity: item.qty,
         unitPrice: item.product.sellingPrice,
+        unitCost: item.product.costPrice || 0,
       }))
     };
-    await db.orders.add(newOrder as any);
+    await db.orders.add(newOrder);
     for (const item of cart) {
       await db.stockMovements.add({
-        id: generateId(), productId: item.productId, variantId: item.variantId,
-        type: "sale", quantity: -item.qty, note: "Đơn Web " + orderId,
-        date: today(), createdAt: now(),
+        id: generateId(),
+        productId: item.productId,
+        variantId: item.variantId,
+        type: "sale",
+        quantity: -item.qty,
+        note: "Đơn Web " + orderId,
+        date: today(),
+        createdAt: now(),
       });
       const v = await db.productVariants.get(item.variantId);
       if (v) await db.productVariants.update(v.id, { stock: Math.max(0, v.stock - item.qty) });
@@ -202,8 +215,9 @@ export default function Storefront() {
     "TPBank": "TPB", "VietinBank": "ICB",
   };
   const bankCode = BANK_CODES[bankName] || "VCB";
+  const cleanAccount = bankAccount.replace(/\D/g, "");
   const vietQrUrl = placedOrder
-    ? `https://img.vietqr.io/image/${bankCode}-${bankAccount}-compact2.jpg?amount=${placedOrder.total}&addInfo=${placedOrder.orderId}&accountName=${encodeURIComponent(bankOwner)}`
+    ? `https://img.vietqr.io/image/${bankCode}-${cleanAccount}-compact2.jpg?amount=${placedOrder.total}&addInfo=${placedOrder.orderId}&accountName=${encodeURIComponent(bankOwner)}`
     : "";
 
   return (
@@ -230,6 +244,10 @@ export default function Storefront() {
                 <input required value={shopName} onChange={e => setShopName(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:border-[#fe2c55] outline-none"/>
               </div>
               <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Hotline / Zalo hỗ trợ</label>
+                <input required value={shopPhone} onChange={e => setShopPhone(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:border-[#fe2c55] outline-none"/>
+              </div>
+              <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">Tiêu đề Banner</label>
                 <input required value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:border-[#fe2c55] outline-none"/>
               </div>
@@ -238,7 +256,7 @@ export default function Storefront() {
                 <input required value={bannerSub} onChange={e => setBannerSub(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:border-[#fe2c55] outline-none"/>
               </div>
               <hr className="border-gray-100"/>
-              <p className="text-xs font-bold text-gray-400 uppercase">Tài khoản ngân hàng</p>
+              <p className="text-xs font-bold text-gray-400 uppercase">Tài khoản ngân hàng nhận tiền</p>
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">Ngân hàng</label>
                 <select value={bankName} onChange={e => setBankName(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:border-[#fe2c55] outline-none">
@@ -277,11 +295,11 @@ export default function Storefront() {
           </div>
           <div className="flex-1 max-w-2xl bg-[#f1f1f1] h-10 rounded-full flex items-center px-4 border border-transparent focus-within:border-[#fe2c55] focus-within:bg-white transition-colors">
             <Search size={16} className="text-gray-400 shrink-0"/>
-            <input type="text" placeholder="Tìm kiếm sản phẩm..." value={search} onChange={e => setSearch(e.target.value)} className="bg-transparent border-none outline-none w-full text-sm text-gray-900 placeholder-gray-500 ml-2"/>
+            <input type="text" placeholder="Tìm kiếm sản phẩm theo tên, danh mục..." value={search} onChange={e => setSearch(e.target.value)} className="bg-transparent border-none outline-none w-full text-sm text-gray-900 placeholder-gray-500 ml-2"/>
             {search && <button onClick={() => setSearch("")} className="shrink-0 text-gray-400 hover:text-gray-600"><X size={14}/></button>}
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => navigate("/track")} className="hidden md:flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-[#fe2c55] transition-colors px-3 py-2 rounded-lg hover:bg-gray-100">
+            <button onClick={() => navigate("/track")} className="hidden md:flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-[#fe2c55] transition-colors px-3 py-2 rounded-lg hover:bg-gray-100">
               <Search size={15}/> Tra cứu đơn
             </button>
             <button onClick={() => { setIsCheckoutOpen(true); setCheckoutStep("cart"); }} className="relative p-2 shrink-0 flex items-center gap-2 text-gray-900 hover:text-[#fe2c55] transition-colors">
@@ -312,7 +330,7 @@ export default function Storefront() {
             </div>
             <div className="flex-1 rounded-2xl bg-white p-4 shadow-sm border border-red-100 flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-green-50 text-green-500 flex items-center justify-center shrink-0"><ShieldCheck size={24}/></div>
-              <div><h3 className="font-bold text-gray-900">Hàng Chính Hãng</h3><p className="text-sm text-gray-600">Cam kết đúng chất lượng</p></div>
+              <div><h3 className="font-bold text-gray-900">Hàng Chính Hãng</h3><p className="text-sm text-gray-600">Cam kết chất lượng 100%</p></div>
             </div>
           </div>
         </div>
@@ -456,7 +474,7 @@ export default function Storefront() {
             <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
               {checkoutStep === "payment" ? (
                 <button onClick={() => setCheckoutStep("cart")} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium text-sm">
-                  <ChevronLeft size={18}/> Quay lại
+                  <ChevronLeft size={18}/> Quay lại giỏ hàng
                 </button>
               ) : (
                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -472,7 +490,7 @@ export default function Storefront() {
             {/* Step indicator */}
             {checkoutStep !== "success" && (
               <div className="flex px-4 py-3 gap-2 border-b border-gray-100 shrink-0">
-                {[["cart","1. Giỏ hàng & Địa chỉ"],["payment","2. Thanh toán"]].map(([step, label]) => (
+                {[["cart","1. Giỏ hàng & Địa chỉ"],["payment","2. Chọn thanh toán"]].map(([step, label]) => (
                   <div key={step} className={`flex-1 text-center text-xs font-bold py-1.5 rounded-lg ${checkoutStep===step?'bg-[#fe2c55] text-white':'bg-gray-100 text-gray-400'}`}>{label}</div>
                 ))}
               </div>
@@ -521,9 +539,23 @@ export default function Storefront() {
 
                       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
                         <h3 className="font-bold text-gray-900 text-sm mb-3">📦 Thông tin giao hàng</h3>
-                        <input className="w-full text-sm text-gray-900 placeholder-gray-400 px-4 py-3 border border-gray-200 focus:border-[#fe2c55] rounded-lg mb-3 outline-none" placeholder="Họ và tên người nhận *" value={checkoutForm.name} onChange={e => setCheckoutForm(p=>({...p,name:e.target.value}))}/>
-                        <input type="tel" className="w-full text-sm text-gray-900 placeholder-gray-400 px-4 py-3 border border-gray-200 focus:border-[#fe2c55] rounded-lg mb-3 outline-none" placeholder="Số điện thoại *" value={checkoutForm.phone} onChange={e => setCheckoutForm(p=>({...p,phone:e.target.value}))}/>
-                        <textarea className="w-full text-sm text-gray-900 placeholder-gray-400 px-4 py-3 border border-gray-200 focus:border-[#fe2c55] rounded-lg outline-none resize-none h-20" placeholder="Địa chỉ đầy đủ (số nhà, đường, phường/xã, quận, tỉnh) *" value={checkoutForm.address} onChange={e => setCheckoutForm(p=>({...p,address:e.target.value}))}/>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Họ và tên người nhận *</label>
+                            <input className="w-full text-sm text-gray-900 placeholder-gray-400 px-3.5 py-2.5 border border-gray-200 focus:border-[#fe2c55] rounded-lg outline-none" placeholder="VD: Nguyễn Văn Nam" value={checkoutForm.name} onChange={e => setCheckoutForm(p=>({...p,name:e.target.value}))}/>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Số điện thoại nhận hàng *</label>
+                            <input type="tel" className="w-full text-sm text-gray-900 placeholder-gray-400 px-3.5 py-2.5 border border-gray-200 focus:border-[#fe2c55] rounded-lg outline-none" placeholder="VD: 0912 345 678" value={checkoutForm.phone} onChange={e => setCheckoutForm(p=>({...p,phone:e.target.value}))}/>
+                            {checkoutForm.phone && !isValidPhone(checkoutForm.phone) && (
+                              <p className="text-[11px] text-amber-600 mt-1">⚠️ Vui lòng nhập đúng số điện thoại (9-11 chữ số)</p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Địa chỉ giao hàng đầy đủ *</label>
+                            <textarea className="w-full text-sm text-gray-900 placeholder-gray-400 px-3.5 py-2.5 border border-gray-200 focus:border-[#fe2c55] rounded-lg outline-none resize-none h-20" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành..." value={checkoutForm.address} onChange={e => setCheckoutForm(p=>({...p,address:e.target.value}))}/>
+                          </div>
+                        </div>
                       </div>
                     </>
                   )}
@@ -533,43 +565,41 @@ export default function Storefront() {
               {/* STEP 2: Payment */}
               {checkoutStep === "payment" && (
                 <>
-                  {/* Summary */}
                   <div className="bg-white rounded-xl border border-gray-200 p-4">
                     <p className="text-xs font-bold text-gray-400 uppercase mb-2">Tóm tắt đơn hàng</p>
                     {cart.map((item,i) => (
                       <div key={i} className="flex justify-between text-xs text-gray-600 mb-1">
-                        <span className="truncate mr-2">{item.product.name} ×{item.qty}</span>
+                        <span className="truncate mr-2">{item.product.name} ({item.variant.color} - {item.variant.size}) ×{item.qty}</span>
                         <span className="shrink-0 font-medium">{formatCurrency(item.product.sellingPrice * item.qty)}</span>
                       </div>
                     ))}
                     <div className="border-t border-gray-100 mt-2 pt-2 flex justify-between font-bold text-sm">
-                      <span>Tổng</span><span className="text-[#fe2c55]">{formatCurrency(cartTotal)}</span>
+                      <span>Tổng thanh toán</span><span className="text-[#fe2c55]">{formatCurrency(cartTotal)}</span>
                     </div>
                   </div>
 
-                  {/* Payment Method */}
                   <div className="bg-white rounded-xl border border-gray-200 p-4">
-                    <p className="text-sm font-bold text-gray-900 mb-3">💳 Chọn hình thức thanh toán</p>
+                    <p className="text-sm font-bold text-gray-900 mb-3">💳 Chọn phương thức thanh toán</p>
                     <div className="space-y-3">
                       <button onClick={() => setPaymentMethod("cod")}
-                        className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${paymentMethod==="cod"?'border-[#fe2c55] bg-red-50':'border-gray-200 hover:border-gray-300'}`}>
+                        className={`w-full flex items-center gap-3.5 p-3.5 rounded-xl border-2 transition-all text-left ${paymentMethod==="cod"?'border-[#fe2c55] bg-red-50/50':'border-gray-200 hover:border-gray-300'}`}>
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${paymentMethod==="cod"?'bg-[#fe2c55] text-white':'bg-gray-100 text-gray-500'}`}><Truck size={20}/></div>
-                        <div>
+                        <div className="flex-1">
                           <p className="font-bold text-gray-900 text-sm">Thanh toán khi nhận hàng (COD)</p>
-                          <p className="text-xs text-gray-500 mt-0.5">Trả tiền mặt cho shipper khi nhận được hàng</p>
+                          <p className="text-xs text-gray-500 mt-0.5">Thanh toán tiền mặt trực tiếp cho shipper khi nhận bưu kiện</p>
                         </div>
-                        <div className={`ml-auto w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${paymentMethod==="cod"?'border-[#fe2c55] bg-[#fe2c55]':'border-gray-300'}`}>
+                        <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${paymentMethod==="cod"?'border-[#fe2c55] bg-[#fe2c55]':'border-gray-300'}`}>
                           {paymentMethod==="cod" && <div className="w-2 h-2 bg-white rounded-full"/>}
                         </div>
                       </button>
                       <button onClick={() => setPaymentMethod("bank_transfer")}
-                        className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${paymentMethod==="bank_transfer"?'border-[#fe2c55] bg-red-50':'border-gray-200 hover:border-gray-300'}`}>
+                        className={`w-full flex items-center gap-3.5 p-3.5 rounded-xl border-2 transition-all text-left ${paymentMethod==="bank_transfer"?'border-[#fe2c55] bg-red-50/50':'border-gray-200 hover:border-gray-300'}`}>
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${paymentMethod==="bank_transfer"?'bg-[#fe2c55] text-white':'bg-gray-100 text-gray-500'}`}><Banknote size={20}/></div>
-                        <div>
-                          <p className="font-bold text-gray-900 text-sm">Chuyển khoản ngân hàng</p>
-                          <p className="text-xs text-gray-500 mt-0.5">Mã QR và thông tin TK sẽ hiện sau khi đặt</p>
+                        <div className="flex-1">
+                          <p className="font-bold text-gray-900 text-sm">Chuyển khoản ngân hàng (VietQR)</p>
+                          <p className="text-xs text-gray-500 mt-0.5">Quét mã QR chuyển khoản tự động điền số tiền & nội dung</p>
                         </div>
-                        <div className={`ml-auto w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${paymentMethod==="bank_transfer"?'border-[#fe2c55] bg-[#fe2c55]':'border-gray-300'}`}>
+                        <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${paymentMethod==="bank_transfer"?'border-[#fe2c55] bg-[#fe2c55]':'border-gray-300'}`}>
                           {paymentMethod==="bank_transfer" && <div className="w-2 h-2 bg-white rounded-full"/>}
                         </div>
                       </button>
@@ -584,7 +614,7 @@ export default function Storefront() {
                   <div className="text-center py-6 bg-white rounded-2xl border border-gray-200">
                     <CheckCircle size={56} className="mx-auto text-green-500 mb-3"/>
                     <h3 className="text-xl font-bold text-gray-900 mb-1">Đặt hàng thành công!</h3>
-                    <p className="text-sm text-gray-500 px-4">Cảm ơn <strong>{checkoutForm.name}</strong>! Shop sẽ liên hệ <strong>{checkoutForm.phone}</strong> để xác nhận sớm nhất.</p>
+                    <p className="text-sm text-gray-500 px-4">Cảm ơn <strong>{checkoutForm.name}</strong>! Shop sẽ liên hệ <strong>{checkoutForm.phone}</strong> để chuẩn bị đơn gửi bạn.</p>
                   </div>
 
                   {/* Order Code */}
@@ -597,7 +627,7 @@ export default function Storefront() {
                         <Copy size={13}/> {copied ? "Đã sao chép!" : "Sao chép"}
                       </button>
                     </div>
-                    <p className="text-xs text-gray-400 mt-2">Dùng mã này để tra cứu đơn hàng của bạn</p>
+                    <p className="text-xs text-gray-400 mt-2">Dùng mã này hoặc SĐT để tra cứu hành trình đơn bất cứ lúc nào</p>
                   </div>
 
                   {/* COD Info */}
@@ -629,7 +659,7 @@ export default function Storefront() {
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-gray-900 text-sm">{val}</span>
                               {["Số TK","Nội dung CK"].includes(label) && (
-                                <button onClick={() => copyText(val)} className="text-blue-500 hover:text-blue-700"><Copy size={12}/></button>
+                                <button onClick={() => copyText(val)} className="text-blue-500 hover:text-blue-700" title="Sao chép"><Copy size={12}/></button>
                               )}
                             </div>
                           </div>
@@ -649,13 +679,13 @@ export default function Storefront() {
 
                   {/* Track Order */}
                   <button onClick={() => { setIsCheckoutOpen(false); navigate("/track"); }}
-                    className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-50 transition-colors text-sm">
-                    <Search size={16}/> Tra cứu đơn hàng của tôi
+                    className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-50 transition-colors text-sm shadow-sm">
+                    <Search size={16}/> Tra cứu hành trình đơn hàng
                     <ExternalLink size={14} className="text-gray-400"/>
                   </button>
 
                   <button onClick={() => { setIsCheckoutOpen(false); setCheckoutStep("cart"); setPlacedOrder(null); setCheckoutForm({name:"",phone:"",address:""}); }}
-                    className="w-full bg-[#fe2c55] text-white font-bold py-3 rounded-xl hover:bg-[#e62045] transition-colors text-sm">
+                    className="w-full bg-[#fe2c55] text-white font-bold py-3 rounded-xl hover:bg-[#e62045] transition-colors text-sm shadow-md shadow-red-200">
                     Tiếp tục mua sắm
                   </button>
                 </div>
@@ -670,17 +700,17 @@ export default function Storefront() {
                   <span className="font-bold text-[#fe2c55] text-base">{formatCurrency(cartTotal)}</span>
                 </div>
                 <button onClick={() => setCheckoutStep("payment")} disabled={!canProceedToPayment}
-                  className="w-full py-3.5 bg-[#fe2c55] hover:bg-[#e62045] text-white rounded-xl font-bold text-base disabled:opacity-50 transition-colors">
+                  className="w-full py-3.5 bg-[#fe2c55] hover:bg-[#e62045] text-white rounded-xl font-bold text-base disabled:opacity-50 transition-colors shadow-lg shadow-red-200">
                   Tiếp tục → Chọn thanh toán
                 </button>
-                {!canProceedToPayment && <p className="text-xs text-gray-400 text-center mt-2">Điền đầy đủ thông tin giao hàng để tiếp tục</p>}
+                {!canProceedToPayment && <p className="text-xs text-gray-400 text-center mt-2">Vui lòng điền họ tên, số điện thoại và địa chỉ để tiếp tục</p>}
               </div>
             )}
             {checkoutStep === "payment" && (
               <div className="p-4 bg-white border-t border-gray-200 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
                 <button onClick={placeOrder} disabled={placing}
-                  className="w-full py-3.5 bg-[#fe2c55] hover:bg-[#e62045] text-white rounded-xl font-bold text-base disabled:opacity-50 transition-colors">
-                  {placing ? "Đang xử lý..." : `✓ Đặt hàng • ${formatCurrency(cartTotal)}`}
+                  className="w-full py-3.5 bg-[#fe2c55] hover:bg-[#e62045] text-white rounded-xl font-bold text-base disabled:opacity-50 transition-colors shadow-lg shadow-red-200">
+                  {placing ? "Đang tạo đơn..." : `✓ Hoàn tất đặt hàng • ${formatCurrency(cartTotal)}`}
                 </button>
               </div>
             )}

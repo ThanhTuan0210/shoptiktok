@@ -58,7 +58,7 @@ export default function Finance() {
     const curReturns = allReturns.filter(r => inRange(r.returnDate));
 
     const revenue = curOrders.reduce((s, o) => s + o.total, 0);
-    const cogs = curOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + i.unitCost * i.quantity, 0), 0);
+    const cogs = curOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + (i.unitCost || 0) * i.quantity, 0), 0);
     const grossProfit = revenue - cogs;
     const totalExpenses = curExpenses.reduce((s, e) => s + e.amount, 0);
     const tiktokFees = curOrders.reduce((s, o) => s + (o.tiktokFeeAmount || 0), 0);
@@ -351,3 +351,4 @@ export default function Finance() {
     </div>
   );
 }
+
