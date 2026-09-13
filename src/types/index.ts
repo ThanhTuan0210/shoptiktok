@@ -273,3 +273,20 @@ export interface LiveSession {
   createdAt: string;
   updatedAt: string;
 }
+
+
+export interface PromoSettings {
+  enableLuckyWheel: boolean;
+  enableVoucher: boolean;
+  enableUpsell: boolean;
+  enableComboDiscount: boolean;
+  enableSocialProof: boolean;
+}
+
+export const DEFAULT_PROMO_SETTINGS: PromoSettings = {
+  enableLuckyWheel: false,
+  enableVoucher: false,
+  enableUpsell: false,
+  enableComboDiscount: false,
+  enableSocialProof: false,
+};

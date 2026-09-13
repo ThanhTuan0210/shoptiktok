@@ -12,6 +12,8 @@ import { useNavigate } from "react-router-dom";
 import SizeGuideModal from "../components/ui/SizeGuideModal";
 import SocialProofNotification from "../components/ui/SocialProofNotification";
 import LuckyWheelModal from "../components/ui/LuckyWheelModal";
+import type { PromoSettings } from "../types";
+import { DEFAULT_PROMO_SETTINGS } from "../types";
 import FloatingContact from "../components/ui/FloatingContact";
 import { playOrderChime } from "../utils/audioAlert";
 
@@ -138,6 +140,15 @@ export default function Storefront() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
+
+  // Promo & Marketing Toggles (Demo Mode)
+  const [promoSettings] = useState<PromoSettings>(() => {
+    try {
+      const saved = localStorage.getItem("tt_promoSettings");
+      if (saved) return { ...DEFAULT_PROMO_SETTINGS, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_PROMO_SETTINGS;
+  });
 
   // Filtering & Sorting
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -290,7 +301,7 @@ export default function Storefront() {
       return Math.round(cartTotal * 0.05);
     }
     return 0;
-  }, [cart, cartTotal]);
+  }, [cart, cartTotal, promoSettings.enableComboDiscount]);
 
   const discountAmount = useMemo(() => {
     let amt = 0;
@@ -1459,39 +1470,42 @@ export default function Storefront() {
       )}
 
       {/* Social Proof Realtime Purchase Notifications */}
-      <SocialProofNotification orders={orders} />
+      {promoSettings.enableSocialProof && <SocialProofNotification orders={orders} />}
 
-      {/* Floating Lucky Wheel Button */}
-      <button
-        type="button"
-        onClick={() => setIsLuckyWheelOpen(true)}
-        className="fixed right-4 bottom-20 sm:bottom-24 z-30 flex items-center gap-2 bg-gradient-to-r from-rose-600 via-pink-600 to-rose-600 text-white font-bold px-3.5 py-2.5 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all border-2 border-amber-300 animate-bounce cursor-pointer"
-        style={{
-          boxShadow: "0 10px 25px -5px rgba(244, 63, 94, 0.5), 0 8px 10px -6px rgba(244, 63, 94, 0.3)",
-        }}
-        title="Quay vòng quay may mắn nhận quà"
-      >
-        <span className="text-base">🎡</span>
-        <span className="text-xs font-extrabold hidden sm:inline">Vòng Quay May Mắn</span>
-        <span className="text-[10px] bg-amber-400 text-gray-900 px-1.5 py-0.5 rounded-full font-black">
-          100% Trúng
-        </span>
-      </button>
+      {/* Floating Lucky Wheel Button & Modal */}
+      {promoSettings.enableLuckyWheel && (
+        <>
+          <button
+            type="button"
+            onClick={() => setIsLuckyWheelOpen(true)}
+            className="fixed right-4 bottom-20 sm:bottom-24 z-30 flex items-center gap-2 bg-gradient-to-r from-rose-600 via-pink-600 to-rose-600 text-white font-bold px-3.5 py-2.5 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all border-2 border-amber-300 animate-bounce cursor-pointer"
+            style={{
+              boxShadow: "0 10px 25px -5px rgba(244, 63, 94, 0.5), 0 8px 10px -6px rgba(244, 63, 94, 0.3)",
+            }}
+            title="Quay vòng quay may mắn nhận quà"
+          >
+            <span className="text-base">🎡</span>
+            <span className="text-xs font-extrabold hidden sm:inline">Vòng Quay May Mắn</span>
+            <span className="text-[10px] bg-amber-400 text-gray-900 px-1.5 py-0.5 rounded-full font-black">
+              100% Trúng
+            </span>
+          </button>
 
-      {/* Lucky Wheel Modal */}
-      {isLuckyWheelOpen && (
-        <LuckyWheelModal
-          isOpen={true}
-          onClose={() => setIsLuckyWheelOpen(false)}
-          onApplyVoucher={(code: string) => {
-            const found = AVAILABLE_VOUCHERS.find(v => v.code === code);
-            if (found) {
-              setAppliedVoucher(found);
-              setIsCheckoutOpen(true);
-              setCheckoutStep("cart");
-            }
-          }}
-        />
+          {isLuckyWheelOpen && (
+            <LuckyWheelModal
+              isOpen={true}
+              onClose={() => setIsLuckyWheelOpen(false)}
+              onApplyVoucher={(code: string) => {
+                const found = AVAILABLE_VOUCHERS.find(v => v.code === code);
+                if (found) {
+                  setAppliedVoucher(found);
+                  setIsCheckoutOpen(true);
+                  setCheckoutStep("cart");
+                }
+              }}
+            />
+          )}
+        </>
       )}
 
             {/* Size Guide Modal */}

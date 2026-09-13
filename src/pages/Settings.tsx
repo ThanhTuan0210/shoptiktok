@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { db } from "../db/database";
-import type { AppSettings } from "../types";
-import { Settings as SettingsIcon, Save, Lock, Download, Upload, Trash2, Database, ShieldCheck, Banknote } from "lucide-react";
+import type { AppSettings, PromoSettings } from "../types";
+import { DEFAULT_PROMO_SETTINGS } from "../types";
+import { Settings as SettingsIcon, Save, Lock, Download, Upload, Trash2, Database, ShieldCheck, Banknote, Gift, Ticket, Sparkles, Percent, Bell } from "lucide-react";
 import { exportDatabaseBackup } from "../utils/exportData";
+
 
 const defaultSettings: AppSettings = {
   shopName: "Henr.Studio",
@@ -30,7 +32,34 @@ export default function Settings() {
   const [lastBackupDate, setLastBackupDate] = useState(localStorage.getItem("tt_lastBackupDate") || "");
   const [safeWipeInput, setSafeWipeInput] = useState("");
   const [showSafeWipeModal, setShowSafeWipeModal] = useState(false);
-  const [zaloPhone, setZaloPhone] = useState(localStorage.getItem("tt_zaloPhone") || "0988 234 567");
+    const [zaloPhone, setZaloPhone] = useState(localStorage.getItem("tt_zaloPhone") || "0988 234 567");
+  const [promoSettings, setPromoSettings] = useState<PromoSettings>(() => {
+    try {
+      const saved = localStorage.getItem("tt_promoSettings");
+      if (saved) return { ...DEFAULT_PROMO_SETTINGS, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_PROMO_SETTINGS;
+  });
+
+  const togglePromo = (key: keyof PromoSettings) => {
+    setPromoSettings(prev => {
+      const updated = { ...prev, [key]: !prev[key] };
+      localStorage.setItem("tt_promoSettings", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const setAllPromo = (val: boolean) => {
+    const updated: PromoSettings = {
+      enableLuckyWheel: val,
+      enableVoucher: val,
+      enableUpsell: val,
+      enableComboDiscount: val,
+      enableSocialProof: val,
+    };
+    setPromoSettings(updated);
+    localStorage.setItem("tt_promoSettings", JSON.stringify(updated));
+  };
 
   useEffect(() => { loadSettings(); loadStats(); }, []);
 
@@ -258,6 +287,174 @@ export default function Settings() {
             <Save size={16} />
             {saving ? "Đang lưu..." : saved ? "✓ Đã lưu cài đặt!" : "Lưu tất cả cài đặt"}
           </button>
+        </div>
+      </div>
+
+      
+      {/* Marketing & Promotion Feature Toggles (Demo Mode Control) */}
+      <div className="card space-y-4 border-rose-900/40 bg-gradient-to-br from-gray-900 via-gray-900 to-rose-950/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-800">
+          <div>
+            <h2 className="text-base font-semibold text-white flex items-center gap-2">
+              <Gift size={18} className="text-rose-400" /> Cấu Hình Chiến Dịch Marketing & Khuyến Mãi (Chế Độ Demo)
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Bật/Tắt các tính năng tặng quà, giảm giá, voucher. Khi đang chạy thử nghiệm hoặc bán bình thường, bạn có thể tắt để không ảnh hưởng đến doanh thu thực tế.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setAllPromo(false)}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors"
+            >
+              Tắt toàn bộ (Bán chuẩn / Demo)
+            </button>
+            <button
+              type="button"
+              onClick={() => setAllPromo(true)}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600/30 hover:bg-rose-600/50 text-rose-300 border border-rose-500/40 transition-colors"
+            >
+              Bật tất cả chiến dịch
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+          {/* Toggle 1: Lucky Wheel */}
+          <div className={"p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 " + (promoSettings.enableLuckyWheel ? "bg-rose-950/30 border-rose-500/40" : "bg-gray-800/40 border-gray-800")}>
+            <div className="flex items-start gap-3">
+              <div className={"w-9 h-9 rounded-lg flex items-center justify-center shrink-0 " + (promoSettings.enableLuckyWheel ? "bg-rose-500/20 text-rose-400" : "bg-gray-800 text-gray-500")}>
+                <Sparkles size={18} />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-gray-200 flex items-center gap-1.5">
+                  Vòng Quay May Mắn (Lucky Wheel)
+                  <span className={"text-[10px] px-1.5 py-0.5 rounded font-medium " + (promoSettings.enableLuckyWheel ? "bg-emerald-900/50 text-emerald-400 border border-emerald-800" : "bg-gray-800 text-gray-400")}>
+                    {promoSettings.enableLuckyWheel ? "Đang Bật" : "Đang Tắt (Ẩn)"}
+                  </span>
+                </h4>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  Hiển thị nút quay quà tặng 100% trúng thưởng & thu thập SĐT khách hàng ở góc màn hình.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => togglePromo('enableLuckyWheel')}
+              className={"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out " + (promoSettings.enableLuckyWheel ? "bg-rose-600" : "bg-gray-700")}
+            >
+              <span className={"inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out " + (promoSettings.enableLuckyWheel ? "translate-x-5" : "translate-x-0")} />
+            </button>
+          </div>
+
+          {/* Toggle 2: Vouchers */}
+          <div className={"p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 " + (promoSettings.enableVoucher ? "bg-rose-950/30 border-rose-500/40" : "bg-gray-800/40 border-gray-800")}>
+            <div className="flex items-start gap-3">
+              <div className={"w-9 h-9 rounded-lg flex items-center justify-center shrink-0 " + (promoSettings.enableVoucher ? "bg-rose-500/20 text-rose-400" : "bg-gray-800 text-gray-500")}>
+                <Ticket size={18} />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-gray-200 flex items-center gap-1.5">
+                  Mã Giảm Giá & Voucher (Vouchers)
+                  <span className={"text-[10px] px-1.5 py-0.5 rounded font-medium " + (promoSettings.enableVoucher ? "bg-emerald-900/50 text-emerald-400 border border-emerald-800" : "bg-gray-800 text-gray-400")}>
+                    {promoSettings.enableVoucher ? "Đang Bật" : "Đang Tắt (Ẩn)"}
+                  </span>
+                </h4>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  Hiển thị ô nhập mã voucher trong giỏ hàng (VD: HENR30K, FREESHIP) để trừ tiền hóa đơn.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => togglePromo('enableVoucher')}
+              className={"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out " + (promoSettings.enableVoucher ? "bg-rose-600" : "bg-gray-700")}
+            >
+              <span className={"inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out " + (promoSettings.enableVoucher ? "translate-x-5" : "translate-x-0")} />
+            </button>
+          </div>
+
+          {/* Toggle 3: Upsell Accessories */}
+          <div className={"p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 " + (promoSettings.enableUpsell ? "bg-rose-950/30 border-rose-500/40" : "bg-gray-800/40 border-gray-800")}>
+            <div className="flex items-start gap-3">
+              <div className={"w-9 h-9 rounded-lg flex items-center justify-center shrink-0 " + (promoSettings.enableUpsell ? "bg-rose-500/20 text-rose-400" : "bg-gray-800 text-gray-500")}>
+                <Gift size={18} />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-gray-200 flex items-center gap-1.5">
+                  Deal Sốc Mua Kèm Phụ Kiện (Upsell)
+                  <span className={"text-[10px] px-1.5 py-0.5 rounded font-medium " + (promoSettings.enableUpsell ? "bg-emerald-900/50 text-emerald-400 border border-emerald-800" : "bg-gray-800 text-gray-400")}>
+                    {promoSettings.enableUpsell ? "Đang Bật" : "Đang Tắt (Ẩn)"}
+                  </span>
+                </h4>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  Gợi ý mua kèm Băng đô lụa (+19.000₫) và Túi giặt (+29.000₫) ngay trong bảng chọn size.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => togglePromo('enableUpsell')}
+              className={"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out " + (promoSettings.enableUpsell ? "bg-rose-600" : "bg-gray-700")}
+            >
+              <span className={"inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out " + (promoSettings.enableUpsell ? "translate-x-5" : "translate-x-0")} />
+            </button>
+          </div>
+
+          {/* Toggle 4: Combo 2 sets 5% */}
+          <div className={"p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 " + (promoSettings.enableComboDiscount ? "bg-rose-950/30 border-rose-500/40" : "bg-gray-800/40 border-gray-800")}>
+            <div className="flex items-start gap-3">
+              <div className={"w-9 h-9 rounded-lg flex items-center justify-center shrink-0 " + (promoSettings.enableComboDiscount ? "bg-rose-500/20 text-rose-400" : "bg-gray-800 text-gray-500")}>
+                <Percent size={18} />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-gray-200 flex items-center gap-1.5">
+                  Ưu Đãi Combo Giảm 5% Khi Mua 2 Bộ
+                  <span className={"text-[10px] px-1.5 py-0.5 rounded font-medium " + (promoSettings.enableComboDiscount ? "bg-emerald-900/50 text-emerald-400 border border-emerald-800" : "bg-gray-800 text-gray-400")}>
+                    {promoSettings.enableComboDiscount ? "Đang Bật" : "Đang Tắt (Ẩn)"}
+                  </span>
+                </h4>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  Tự động giảm thêm 5% tổng hóa đơn khi khách chọn từ 2 bộ pyjama trở lên.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => togglePromo('enableComboDiscount')}
+              className={"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out " + (promoSettings.enableComboDiscount ? "bg-rose-600" : "bg-gray-700")}
+            >
+              <span className={"inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out " + (promoSettings.enableComboDiscount ? "translate-x-5" : "translate-x-0")} />
+            </button>
+          </div>
+
+          {/* Toggle 5: Social Proof Realtime */}
+          <div className={"p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 md:col-span-2 " + (promoSettings.enableSocialProof ? "bg-rose-950/30 border-rose-500/40" : "bg-gray-800/40 border-gray-800")}>
+            <div className="flex items-start gap-3">
+              <div className={"w-9 h-9 rounded-lg flex items-center justify-center shrink-0 " + (promoSettings.enableSocialProof ? "bg-rose-500/20 text-rose-400" : "bg-gray-800 text-gray-500")}>
+                <Bell size={18} />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-gray-200 flex items-center gap-1.5">
+                  Thông Báo Đơn Hàng Mới (Social Proof Popup)
+                  <span className={"text-[10px] px-1.5 py-0.5 rounded font-medium " + (promoSettings.enableSocialProof ? "bg-emerald-900/50 text-emerald-400 border border-emerald-800" : "bg-gray-800 text-gray-400")}>
+                    {promoSettings.enableSocialProof ? "Đang Bật" : "Đang Tắt (Ẩn)"}
+                  </span>
+                </h4>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  Hiện popup góc dưới màn hình thông báo đơn hàng mới ("Chị Lan vừa đặt Bộ Pyjama...") kích thích tâm lý đám đông.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => togglePromo('enableSocialProof')}
+              className={"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out " + (promoSettings.enableSocialProof ? "bg-rose-600" : "bg-gray-700")}
+            >
+              <span className={"inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out " + (promoSettings.enableSocialProof ? "translate-x-5" : "translate-x-0")} />
+            </button>
+          </div>
         </div>
       </div>
 
