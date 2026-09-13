@@ -296,6 +296,18 @@ export default function Customers() {
                               <MessageSquare size={12} /> Zalo
                             </a>
                           )}
+                          <a
+                            href={`https://seller-vn.tiktok.com/chat${c.orders[0]?.tiktokOrderId ? `?order_id=${c.orders[0].tiktokOrderId}` : ""}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2 py-1 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors inline-flex items-center gap-1 border border-rose-500/20"
+                            title="Chat TikTok Shop với khách"
+                          >
+                            <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
+                            </svg>
+                            <span>TikTok</span>
+                          </a>
                           <button
                             onClick={() => setSelectedCustomer(c)}
                             className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
@@ -329,7 +341,7 @@ export default function Customers() {
                 <p className="text-white font-semibold text-base">{selectedCustomer.name}</p>
                 <p className="text-xs text-gray-400 font-mono mt-0.5">{selectedCustomer.phone}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {selectedCustomer.phone && selectedCustomer.phone !== "-" && (
                   <>
                     <a
@@ -348,6 +360,18 @@ export default function Customers() {
                     </a>
                   </>
                 )}
+                <a
+                  href={`https://seller-vn.tiktok.com/chat${selectedCustomer.orders[0]?.tiktokOrderId ? `?order_id=${selectedCustomer.orders[0].tiktokOrderId}` : ""}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn bg-zinc-800 hover:bg-zinc-700 text-rose-400 border border-rose-500/30 text-xs py-1.5 px-3 flex items-center gap-1.5"
+                  title="Mở hộp thư chat TikTok Shop Seller Center"
+                >
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
+                  </svg>
+                  <span>Chat TikTok Shop</span> <ExternalLink size={11} />
+                </a>
               </div>
             </div>
 

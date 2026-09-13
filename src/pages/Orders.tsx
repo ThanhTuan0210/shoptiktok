@@ -645,7 +645,7 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                   <td className="whitespace-nowrap text-xs">{formatDate(o.orderDate)}</td>
                   <td>
                     <p className="font-medium text-white">{o.customerName}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                       <span className="text-xs text-gray-400 font-mono">{o.customerPhone || "—"}</span>
                       {o.customerPhone && (
                         <>
@@ -667,6 +667,18 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                           </a>
                         </>
                       )}
+                      <a
+                        href={`https://seller-vn.tiktok.com/chat${o.tiktokOrderId ? `?order_id=${o.tiktokOrderId}` : ""}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 flex items-center gap-1 transition-colors"
+                        title="Mở chat TikTok Shop với khách"
+                      >
+                        <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
+                          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
+                        </svg>
+                        <span>TikTok</span>
+                      </a>
                     </div>
                   </td>
                   <td className="max-w-[190px]">
@@ -923,13 +935,25 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
               <div>
                 <p className="text-xs text-gray-400">Khách hàng</p>
                 <p className="font-semibold text-white mt-0.5">{showDetail.customerName}</p>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <span className="text-xs text-gray-400 font-mono">{showDetail.customerPhone}</span>
                   {showDetail.customerPhone && (
                     <a href={`tel:${showDetail.customerPhone}`} className="text-rose-400 hover:text-rose-300" title="Gọi">
                       <Phone size={12} />
                     </a>
                   )}
+                  <a
+                    href={`https://seller-vn.tiktok.com/chat${showDetail.tiktokOrderId ? `?order_id=${showDetail.tiktokOrderId}` : ""}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 flex items-center gap-1 transition-colors"
+                    title="Mở chat TikTok Shop với khách"
+                  >
+                    <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
+                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
+                    </svg>
+                    <span>TikTok</span>
+                  </a>
                 </div>
               </div>
               <div>
@@ -1018,7 +1042,7 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
             </div>
 
             <div className="flex justify-between items-center pt-2 border-t border-gray-800 flex-wrap gap-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {showDetail.customerPhone && (
                   <a
                     href={`https://zalo.me/${showDetail.customerPhone.replace(/\D/g, "")}`}
@@ -1029,6 +1053,18 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                     <MessageSquare size={13} /> Chat Zalo
                   </a>
                 )}
+                <a
+                  href={`https://seller-vn.tiktok.com/chat${showDetail.tiktokOrderId ? `?order_id=${showDetail.tiktokOrderId}` : ""}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-secondary text-xs flex items-center gap-1.5 text-rose-400 hover:text-rose-300 border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20"
+                  title="Mở chat TikTok Shop với khách"
+                >
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
+                  </svg>
+                  <span>Chat TikTok Shop</span>
+                </a>
                 <button
                   onClick={() => {
                     setPrintOrders([showDetail]);
