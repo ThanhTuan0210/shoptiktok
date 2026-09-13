@@ -35,8 +35,15 @@ export default function Settings() {
     const [zaloPhone, setZaloPhone] = useState(localStorage.getItem("tt_zaloPhone") || "0988 234 567");
   const [promoSettings, setPromoSettings] = useState<PromoSettings>(() => {
     try {
-      const saved = localStorage.getItem("tt_promoSettings");
-      if (saved) return { ...DEFAULT_PROMO_SETTINGS, ...JSON.parse(saved) };
+      const savedV2 = localStorage.getItem("tt_promoSettings_v2");
+      if (savedV2) return { ...DEFAULT_PROMO_SETTINGS, ...JSON.parse(savedV2) };
+      const oldSaved = localStorage.getItem("tt_promoSettings");
+      if (oldSaved) {
+        const parsed = JSON.parse(oldSaved);
+        parsed.enableSocialProof = true;
+        localStorage.setItem("tt_promoSettings_v2", JSON.stringify(parsed));
+        return { ...DEFAULT_PROMO_SETTINGS, ...parsed, enableSocialProof: true };
+      }
     } catch {}
     return DEFAULT_PROMO_SETTINGS;
   });
@@ -44,20 +51,41 @@ export default function Settings() {
   const togglePromo = (key: keyof PromoSettings) => {
     setPromoSettings(prev => {
       const updated = { ...prev, [key]: !prev[key] };
+      localStorage.setItem("tt_promoSettings_v2", JSON.stringify(updated));
       localStorage.setItem("tt_promoSettings", JSON.stringify(updated));
       return updated;
     });
   };
 
-  const setAllPromo = (val: boolean) => {
-    const updated: PromoSettings = {
-      enableLuckyWheel: val,
-      enableVoucher: val,
-      enableUpsell: val,
-      enableComboDiscount: val,
-      enableSocialProof: val,
-    };
+  const applyPreset = (mode: "demo" | "all_on" | "all_off") => {
+    let updated: PromoSettings;
+    if (mode === "demo") {
+      updated = {
+        enableLuckyWheel: false,
+        enableVoucher: false,
+        enableUpsell: false,
+        enableComboDiscount: false,
+        enableSocialProof: true, // Giữ thông báo mua hàng ảo
+      };
+    } else if (mode === "all_on") {
+      updated = {
+        enableLuckyWheel: true,
+        enableVoucher: true,
+        enableUpsell: true,
+        enableComboDiscount: true,
+        enableSocialProof: true,
+      };
+    } else {
+      updated = {
+        enableLuckyWheel: false,
+        enableVoucher: false,
+        enableUpsell: false,
+        enableComboDiscount: false,
+        enableSocialProof: false,
+      };
+    }
     setPromoSettings(updated);
+    localStorage.setItem("tt_promoSettings_v2", JSON.stringify(updated));
     localStorage.setItem("tt_promoSettings", JSON.stringify(updated));
   };
 
@@ -302,20 +330,28 @@ export default function Settings() {
               Bật/Tắt các tính năng tặng quà, giảm giá, voucher. Khi đang chạy thử nghiệm hoặc bán bình thường, bạn có thể tắt để không ảnh hưởng đến doanh thu thực tế.
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
             <button
               type="button"
-              onClick={() => setAllPromo(false)}
-              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors"
+              onClick={() => applyPreset("demo")}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 transition-colors"
+              title="Tắt các khuyến mãi tài chính, giữ lại thông báo mua hàng kích thích doanh số"
             >
-              Tắt toàn bộ (Bán chuẩn / Demo)
+              Chế độ Demo (Giữ Thông Báo Mua Hàng)
             </button>
             <button
               type="button"
-              onClick={() => setAllPromo(true)}
+              onClick={() => applyPreset("all_on")}
               className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600/30 hover:bg-rose-600/50 text-rose-300 border border-rose-500/40 transition-colors"
             >
-              Bật tất cả chiến dịch
+              Bật tất cả
+            </button>
+            <button
+              type="button"
+              onClick={() => applyPreset("all_off")}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700 transition-colors"
+            >
+              Tắt toàn bộ
             </button>
           </div>
         </div>

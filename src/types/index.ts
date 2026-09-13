@@ -288,5 +288,5 @@ export const DEFAULT_PROMO_SETTINGS: PromoSettings = {
   enableVoucher: false,
   enableUpsell: false,
   enableComboDiscount: false,
-  enableSocialProof: false,
+  enableSocialProof: true,
 };

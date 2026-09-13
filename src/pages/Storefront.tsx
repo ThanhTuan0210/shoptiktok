@@ -144,8 +144,15 @@ export default function Storefront() {
   // Promo & Marketing Toggles (Demo Mode)
   const [promoSettings] = useState<PromoSettings>(() => {
     try {
-      const saved = localStorage.getItem("tt_promoSettings");
-      if (saved) return { ...DEFAULT_PROMO_SETTINGS, ...JSON.parse(saved) };
+      const savedV2 = localStorage.getItem("tt_promoSettings_v2");
+      if (savedV2) return { ...DEFAULT_PROMO_SETTINGS, ...JSON.parse(savedV2) };
+      const oldSaved = localStorage.getItem("tt_promoSettings");
+      if (oldSaved) {
+        const parsed = JSON.parse(oldSaved);
+        parsed.enableSocialProof = true;
+        localStorage.setItem("tt_promoSettings_v2", JSON.stringify(parsed));
+        return { ...DEFAULT_PROMO_SETTINGS, ...parsed, enableSocialProof: true };
+      }
     } catch {}
     return DEFAULT_PROMO_SETTINGS;
   });
