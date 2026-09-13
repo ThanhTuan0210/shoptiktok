@@ -89,8 +89,34 @@ export default function Returns() {
   }
 
   async function handleStatusChange(id: string, status: ReturnStatus) {
+    const targetReturn = returns.find(r => r.id === id);
+    if (!targetReturn || targetReturn.status === status) return;
+    const oldStatus = targetReturn.status;
+
     const updates: Partial<Return> = { status, updatedAt: now() };
     if (status === "received") updates.receivedDate = today();
+
+    // Tự động hoàn kho khi đơn hoàn được xác nhận nhập kho lại (restocked)
+    if (status === "restocked" && oldStatus !== "restocked") {
+      for (const item of targetReturn.items || []) {
+        if (!item.variantId) continue;
+        const v = await db.productVariants.get(item.variantId);
+        if (v) {
+          await db.productVariants.update(v.id, { stock: v.stock + item.quantity });
+          await db.stockMovements.add({
+            id: generateId(),
+            productId: item.productId,
+            variantId: item.variantId,
+            type: "return_in",
+            quantity: item.quantity,
+            note: `Nhập lại kho từ đơn hoàn ${targetReturn.tiktokOrderId || targetReturn.orderId}`,
+            date: today(),
+            createdAt: now(),
+          });
+        }
+      }
+    }
+
     await db.returns.update(id, updates);
     loadReturns();
   }

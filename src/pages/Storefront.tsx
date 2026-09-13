@@ -274,14 +274,34 @@ export default function Storefront() {
   };
 
   const addToCart = (product: Product, variant: ProductVariant) => {
+    if (variant.stock <= 0) {
+      alert("Phân loại màu/size này hiện đang tạm hết hàng!");
+      return;
+    }
     setCart(prev => {
       const ex = prev.find(i => i.variantId === variant.id);
-      if (ex) return prev.map(i => i.variantId === variant.id ? { ...i, qty: i.qty + 1 } : i);
+      if (ex) {
+        if (ex.qty >= variant.stock) {
+          alert(`Mẫu này trong kho chỉ còn ${variant.stock} bộ!`);
+          return prev;
+        }
+        return prev.map(i => i.variantId === variant.id ? { ...i, qty: i.qty + 1 } : i);
+      }
       return [...prev, { variantId: variant.id, productId: product.id, qty: 1, product, variant }];
     });
   };
   const updateQty = (variantId: string, delta: number) =>
-    setCart(prev => prev.map(i => i.variantId === variantId ? { ...i, qty: i.qty + delta } : i).filter(i => i.qty > 0));
+    setCart(prev => prev.map(i => {
+      if (i.variantId === variantId) {
+        const nextQty = i.qty + delta;
+        if (delta > 0 && i.variant && nextQty > i.variant.stock) {
+          alert(`Mẫu này trong kho chỉ còn ${i.variant.stock} bộ!`);
+          return i;
+        }
+        return { ...i, qty: nextQty };
+      }
+      return i;
+    }).filter(i => i.qty > 0));
   const removeItem = (variantId: string) => setCart(prev => prev.filter(i => i.variantId !== variantId));
 
   const isValidPhone = (p: string) => {
@@ -295,6 +315,16 @@ export default function Storefront() {
   const placeOrder = async () => {
     if (!canProceedToPayment || placing) return;
     setPlacing(true);
+
+    // Kiểm tra tồn kho thời gian thực trước khi chốt đơn
+    for (const item of cart) {
+      const v = await db.productVariants.get(item.variantId);
+      if (!v || v.stock < item.qty) {
+        alert(`Sản phẩm "${item.product.name} (${item.variant.color} - ${item.variant.size})" chỉ còn ${v ? v.stock : 0} bộ trong kho, không đủ số lượng để đặt hàng!`);
+        setPlacing(false);
+        return;
+      }
+    }
     const orderId = "WEB-" + Math.random().toString(36).substr(2, 8).toUpperCase();
     const newOrder: any = {
       id: generateId(),
