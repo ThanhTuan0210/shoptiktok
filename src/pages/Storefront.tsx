@@ -913,22 +913,32 @@ export default function Storefront() {
                           </div>
                         )}
 
-                        {/* Quick Suggest Vouchers */}
-                        <div className="pt-2 border-t border-gray-100 flex flex-wrap gap-1.5">
-                          {AVAILABLE_VOUCHERS.map(v => (
-                            <button
-                              key={v.code}
-                              type="button"
-                              onClick={() => handleApplyVoucher(v.code)}
-                              className={`text-[10px] px-2.5 py-1 rounded-lg font-mono font-bold border transition-all ${
-                                appliedVoucher?.code === v.code
-                                  ? "bg-rose-50 border-[#fe2c55] text-[#fe2c55]"
-                                  : "bg-gray-50 border-gray-200 text-gray-600 hover:border-gray-400"
-                              }`}
+                        {/* Follow TikTok & Zalo for Vouchers */}
+                        <div className="pt-2.5 border-t border-gray-100 space-y-2">
+                          <div className="p-3 bg-gradient-to-r from-gray-900 via-[#161823] to-gray-950 rounded-2xl text-white flex items-center justify-between gap-2 shadow-sm border border-gray-800">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#fe2c55] to-rose-400 flex items-center justify-center font-bold text-sm shrink-0 shadow-md shadow-rose-500/20">
+                                🎵
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-white leading-tight">Follow TikTok @{shopName} Nhận Voucher</p>
+                                <p className="text-[10px] text-rose-200 mt-0.5">Nhắn tin trên TikTok hoặc Zalo để nhận mã 30K - 50K!</p>
+                              </div>
+                            </div>
+                            <a
+                              href="https://www.tiktok.com"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 bg-[#fe2c55] hover:bg-rose-600 active:scale-95 text-white font-bold text-[11px] rounded-xl shrink-0 transition-all shadow-sm flex items-center gap-1"
                             >
-                              {v.code} ({v.label})
-                            </button>
-                          ))}
+                              <span>Follow</span>
+                            </a>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px] text-gray-500 px-1">
+                            <span>🎁 Nhập mã độc quyền từ Livestream TikTok</span>
+                            <span className="text-[#fe2c55] font-bold">Giảm tới 10%</span>
+                          </div>
                         </div>
                       </div>
 
