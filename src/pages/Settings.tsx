@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { db } from "../db/database";
-import type { AppSettings, PromoSettings } from "../types";
-import { DEFAULT_PROMO_SETTINGS } from "../types";
+import type { AppSettings, PromoSettings, WebShieldSettings } from "../types";
+import { DEFAULT_PROMO_SETTINGS, DEFAULT_WEBSHIELD_SETTINGS } from "../types";
 import { Settings as SettingsIcon, Save, Lock, Download, Upload, Trash2, Database, ShieldCheck, Banknote, Gift, Ticket, Sparkles, Percent, Bell } from "lucide-react";
 import { exportDatabaseBackup } from "../utils/exportData";
 
@@ -33,6 +33,22 @@ export default function Settings() {
   const [safeWipeInput, setSafeWipeInput] = useState("");
   const [showSafeWipeModal, setShowSafeWipeModal] = useState(false);
     const [zaloPhone, setZaloPhone] = useState(localStorage.getItem("tt_zaloPhone") || "0988 234 567");
+    const [webShieldSettings, setWebShieldSettings] = useState<WebShieldSettings>(() => {
+    try {
+      const saved = localStorage.getItem("tt_webShield");
+      if (saved) return { ...DEFAULT_WEBSHIELD_SETTINGS, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_WEBSHIELD_SETTINGS;
+  });
+
+  const toggleWebShield = (key: keyof WebShieldSettings) => {
+    setWebShieldSettings(prev => {
+      const updated = { ...prev, [key]: !prev[key] };
+      localStorage.setItem("tt_webShield", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const [promoSettings, setPromoSettings] = useState<PromoSettings>(() => {
     try {
       const savedV2 = localStorage.getItem("tt_promoSettings_v2");
@@ -319,6 +335,88 @@ export default function Settings() {
       </div>
 
       
+      {/* TẦNG 2: Lá Chắn Bảo Vệ Bản Quyền & Chống Copy (WebShield) */}
+      <div className="card space-y-4 border-cyan-900/40 bg-gradient-to-br from-gray-900 via-gray-900 to-cyan-950/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-800">
+          <div>
+            <h2 className="text-base font-semibold text-white flex items-center gap-2">
+              <ShieldCheck size={18} className="text-cyan-400" /> Lá Chắn Chống Copy & Bảo Vệ Bản Quyền (WebShield)
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Bảo vệ nội dung, hình ảnh sản phẩm và mã nguồn khỏi bị sao chép hoặc soi code trên trang bán hàng Storefront.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className={"text-xs font-semibold px-2.5 py-1 rounded-full border " + (webShieldSettings.enableAntiCopy ? "bg-emerald-900/50 text-emerald-400 border-emerald-800" : "bg-gray-800 text-gray-400 border-gray-700")}>
+              {webShieldSettings.enableAntiCopy ? "✓ Đang Kích Hoạt" : "Đang Tắt"}
+            </span>
+            <button
+              type="button"
+              onClick={() => toggleWebShield("enableAntiCopy")}
+              className={"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out " + (webShieldSettings.enableAntiCopy ? "bg-cyan-600" : "bg-gray-700")}
+              title="Bật/Tắt toàn bộ lá chắn chống copy"
+            >
+              <span className={"inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out " + (webShieldSettings.enableAntiCopy ? "translate-x-5" : "translate-x-0")} />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+          {/* Option 1: Anti Right Click & Image Drag */}
+          <div className="p-3.5 rounded-xl border bg-gray-800/40 border-gray-800 flex items-start justify-between gap-3">
+            <div>
+              <h4 className="text-xs font-bold text-gray-200">
+                Chặn Chuột Phải & Kéo Thả Ảnh
+              </h4>
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                Vô hiệu hóa menu chuột phải (Lưu hình ảnh, Sao chép) và khóa kéo thả ảnh sản phẩm ra máy tính. Vẫn cho phép dán SĐT/địa chỉ trong form.
+              </p>
+            </div>
+            <span className="text-[10px] text-cyan-400 bg-cyan-950/60 border border-cyan-800/60 px-2 py-0.5 rounded font-medium shrink-0">
+              Tự động
+            </span>
+          </div>
+
+          {/* Option 2: Block Shortcuts (F12 / Ctrl+U) */}
+          <div className="p-3.5 rounded-xl border bg-gray-800/40 border-gray-800 flex items-start justify-between gap-3">
+            <div>
+              <h4 className="text-xs font-bold text-gray-200">
+                Chặn Phím Tắt Soi Code (F12, Ctrl+U, Ctrl+Shift+I)
+              </h4>
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                Ngăn người ngoài nhấn phím tắt mở DevTools hoặc xem mã nguồn HTML của trang bán hàng.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleWebShield("blockShortcuts")}
+              className={"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out " + (webShieldSettings.blockShortcuts ? "bg-cyan-600" : "bg-gray-700")}
+            >
+              <span className={"inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out " + (webShieldSettings.blockShortcuts ? "translate-x-5" : "translate-x-0")} />
+            </button>
+          </div>
+
+          {/* Option 3: Warning Toast */}
+          <div className="p-3.5 rounded-xl border bg-gray-800/40 border-gray-800 flex items-start justify-between gap-3 md:col-span-2">
+            <div>
+              <h4 className="text-xs font-bold text-gray-200">
+                Hiển Thị Cảnh Báo Bản Quyền (Toast)
+              </h4>
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                Khi ai đó cố tình bấm chuột phải hoặc phím tắt F12, hiện thông báo nhắc nhở bản quyền lịch thiệp ở đầu trang.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleWebShield("showToast")}
+              className={"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out " + (webShieldSettings.showToast ? "bg-cyan-600" : "bg-gray-700")}
+            >
+              <span className={"inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out " + (webShieldSettings.showToast ? "translate-x-5" : "translate-x-0")} />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Marketing & Promotion Feature Toggles (Demo Mode Control) */}
       <div className="card space-y-4 border-rose-900/40 bg-gradient-to-br from-gray-900 via-gray-900 to-rose-950/20">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-800">

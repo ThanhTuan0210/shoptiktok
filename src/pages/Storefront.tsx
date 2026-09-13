@@ -15,6 +15,7 @@ import LuckyWheelModal from "../components/ui/LuckyWheelModal";
 import type { PromoSettings } from "../types";
 import { DEFAULT_PROMO_SETTINGS } from "../types";
 import FloatingContact from "../components/ui/FloatingContact";
+import WebShield from "../components/ui/WebShield";
 import { playOrderChime } from "../utils/audioAlert";
 
 interface CartItem {
@@ -495,6 +496,8 @@ export default function Storefront() {
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-[#161823] flex flex-col font-sans">
+      {/* Anti-Copy & WebShield Protection */}
+      <WebShield shopName={shopName} />
 
       {/* Admin Quick Edit Modal */}
       {isAdminOpen && (
@@ -1534,6 +1537,7 @@ export default function Storefront() {
           <p className="font-bold text-gray-800 text-sm">{shopName} — Đồ Ngủ & Pyjama Cao Cấp</p>
           <p>Cam kết 100% lụa satin & cotton mềm mịn • Đổi size miễn phí 7 ngày</p>
           <p className="text-gray-400 text-[11px] pt-2">Hotline hỗ trợ: <strong>{shopPhone}</strong> • Giờ làm việc: 8:00 - 22:30</p>
+          <p className="text-gray-400 text-[10px] pt-1.5 border-t border-gray-100 max-w-md mx-auto">© 2026 {shopName}. All rights reserved. Mọi hình ảnh và nội dung được bảo vệ bởi WebShield.</p>
         </div>
       </footer>
     </div>

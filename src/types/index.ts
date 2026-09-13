@@ -290,3 +290,20 @@ export const DEFAULT_PROMO_SETTINGS: PromoSettings = {
   enableComboDiscount: false,
   enableSocialProof: true,
 };
+
+// =====================
+// WEBSHIELD (ANTI-COPY & INTELLECTUAL PROPERTY)
+// =====================
+
+export interface WebShieldSettings {
+  enableAntiCopy: boolean;
+  showToast: boolean;
+  blockShortcuts: boolean;
+}
+
+export const DEFAULT_WEBSHIELD_SETTINGS: WebShieldSettings = {
+  enableAntiCopy: true,
+  showToast: true,
+  blockShortcuts: true,
+};
+
