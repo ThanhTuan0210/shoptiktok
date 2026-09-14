@@ -4,7 +4,7 @@ import type { Product, ProductVariant, LiveSession, LivePinnedProduct, Order } f
 import {
   Radio, Video, Play, Square, Plus, Sparkles, Clock, Flame,
   TrendingUp, ShoppingBag, Phone, MapPin, Printer, CheckCircle2,
-  AlertTriangle, ArrowRight, Eye, RefreshCw, X, Zap
+  AlertTriangle, ArrowRight, Eye, RefreshCw, X, Zap, MessageSquare, Heart, Users, ExternalLink, Share2
 } from "lucide-react";
 import Modal from "../components/ui/Modal";
 import PrintShippingModal from "../components/ui/PrintShippingModal";
@@ -52,6 +52,62 @@ export default function LiveStudio() {
 
   // Selected session for reports
   const [selectedReportSessionId, setSelectedReportSessionId] = useState<string>("");
+
+  // TikTok Live Connector State
+  const [tiktokChannel, setTiktokChannel] = useState<string>(() => {
+    return localStorage.getItem("tt_live_channel") || "@henr.studio";
+  });
+  const [viewerCount, setViewerCount] = useState(1428);
+  const [likeCount, setLikeCount] = useState(28500);
+  const [liveTabRight, setLiveTabRight] = useState<"orders" | "comments">("comments");
+
+  interface LiveComment {
+    id: string;
+    user: string;
+    avatar: string;
+    text: string;
+    time: string;
+    suggestedOrder?: {
+      pinNumber: number;
+      size: string;
+      phone: string;
+      name: string;
+    };
+  }
+
+  const [liveComments, setLiveComments] = useState<LiveComment[]>([
+    { id: '1', user: 'Lan Hương', avatar: 'LH', text: 'Chốt ghim 1 màu hồng size M nhé shop! SĐT 0988234123', time: 'Vừa xong', suggestedOrder: { pinNumber: 1, size: 'M', phone: '0988234123', name: 'Chị Lan Hương' } },
+    { id: '2', user: 'Ngọc Bích', avatar: 'NB', text: '52kg cao 1m58 mặc size M vừa xinh không shop ơi?', time: '6s trước' },
+    { id: '3', user: 'Hoàng Oanh', avatar: 'HO', text: 'Chốt bộ sọc caro L, SĐT 0912456789 giao về Hà Nội nha', time: '15s trước', suggestedOrder: { pinNumber: 2, size: 'L', phone: '0912456789', name: 'Chị Hoàng Oanh' } },
+    { id: '4', user: 'Thu Hằng', avatar: 'TH', text: 'Đã share live chốt 2 bộ freeship nha shop! 0977891234', time: '28s trước', suggestedOrder: { pinNumber: 1, size: 'S', phone: '0977891234', name: 'Thu Hằng' } },
+    { id: '5', user: 'Thanh Mai', avatar: 'TM', text: 'Chất lụa satin này có giặt máy được không shop?', time: '40s trước' },
+  ]);
+
+  // Simulated live viewers and comments stream
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setViewerCount(v => Math.max(900, v + Math.floor(Math.random() * 21) - 10));
+      setLikeCount(l => l + Math.floor(Math.random() * 35) + 10);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleCaptureCommentOrder = (comm: LiveComment) => {
+    if (!comm.suggestedOrder) return;
+    const { pinNumber, size, phone, name } = comm.suggestedOrder;
+    const item = activeSession?.pinnedProducts.find(p => p.pinNumber === pinNumber);
+    const itemVars = item ? variants.filter(v => v.productId === item.productId) : [];
+    const matchedVar = itemVars.find(v => v.size.toLowerCase() === size.toLowerCase()) || itemVars[0];
+
+    setFastOrder(prev => ({
+      ...prev,
+      pinNumber,
+      variantId: matchedVar ? matchedVar.id : prev.variantId,
+      customerName: name,
+      customerPhone: phone,
+      quantity: 1,
+    }));
+  };
 
   useEffect(() => {
     loadAllData();
@@ -491,6 +547,44 @@ export default function LiveStudio() {
                 </div>
               </div>
 
+              {/* TikTok Live Connector Command Bar */}
+              <div className="bg-gray-900 border border-rose-900/40 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span className="text-xs font-black tracking-wider uppercase text-emerald-400">
+                      TikTok Live Stream:
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-gray-800/80 px-2.5 py-1 rounded-lg border border-gray-700">
+                    <span className="text-xs font-bold text-white">{tiktokChannel}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-300">
+                    <span className="flex items-center gap-1 text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20">
+                      <Users size={13} /> {viewerCount.toLocaleString()} mắt xem
+                    </span>
+                    <span className="flex items-center gap-1 text-pink-400 font-bold bg-pink-500/10 px-2 py-0.5 rounded-md border border-pink-500/20">
+                      <Heart size={13} fill="currentColor" /> {(likeCount / 1000).toFixed(1)}k tim
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://www.tiktok.com/${tiktokChannel}/live`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn bg-[#fe2c55] hover:bg-[#e62045] text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 shadow-md shadow-rose-950/40 transition-transform active:scale-95"
+                    title="Mở xem phòng live trực tiếp trên TikTok"
+                  >
+                    <ExternalLink size={13} /> Mở TikTok Live
+                  </a>
+                  <span className="text-[11px] text-gray-400 bg-gray-800 px-2.5 py-1.5 rounded-lg border border-gray-700 hidden sm:inline-block">
+                    ✓ Đã liên kết TikTok Shop Bridge
+                  </span>
+                </div>
+              </div>
+
               {/* Real-time KPI Counters & Flash Sale Widget */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
@@ -766,33 +860,103 @@ export default function LiveStudio() {
                     </form>
                   </div>
 
-                  {/* Real-time Order Ticker */}
-                  <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-gray-300">Đơn vừa nổ trong Live ({liveOrders.length})</span>
+                  {/* Live Stream Interaction Box: Comments Feed & Orders Ticker */}
+                  <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 shadow-xl">
+                    <div className="flex items-center justify-between border-b border-gray-800 pb-2 mb-3">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setLiveTabRight("comments")}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 ${
+                            liveTabRight === "comments"
+                              ? "bg-rose-600 text-white"
+                              : "text-gray-400 hover:text-white bg-gray-800/60"
+                          }`}
+                        >
+                          <MessageSquare size={13} /> Chat TikTok Live ({liveComments.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLiveTabRight("orders")}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 ${
+                            liveTabRight === "orders"
+                              ? "bg-rose-600 text-white"
+                              : "text-gray-400 hover:text-white bg-gray-800/60"
+                          }`}
+                        >
+                          <ShoppingBag size={13} /> Đơn Nổ ({liveOrders.length})
+                        </button>
+                      </div>
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
                     </div>
 
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                      {liveOrders.length === 0 ? (
-                        <p className="text-xs text-gray-500 py-6 text-center">Chưa có đơn nào. Hãy chốt đơn đầu tiên!</p>
-                      ) : (
-                        liveOrders.map(order => (
-                          <div key={order.id} className="bg-gray-800/50 border border-gray-700/60 rounded-xl p-2.5 text-xs">
-                            <div className="flex items-center justify-between">
-                              <span className="font-bold text-white">{order.customerName}</span>
-                              <span className="font-bold text-rose-400">{formatCurrency(order.total)}</span>
+                    {liveTabRight === "comments" ? (
+                      <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                        <div className="text-[11px] text-gray-400 bg-gray-800/40 p-2 rounded-lg border border-gray-800 flex items-center justify-between mb-2">
+                          <span>💡 Bấm <b>"Bắt đơn"</b> để tự điền SĐT & Size vào form chốt</span>
+                          <span className="text-emerald-400 font-bold">● Live Chat</span>
+                        </div>
+                        {liveComments.map(comm => (
+                          <div
+                            key={comm.id}
+                            className={`p-2.5 rounded-xl border text-xs transition-all ${
+                              comm.suggestedOrder
+                                ? "bg-rose-950/30 border-rose-800/60 shadow-sm"
+                                : "bg-gray-800/40 border-gray-800 text-gray-300"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-5 h-5 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                                  {comm.avatar}
+                                </div>
+                                <span className="font-bold text-gray-200">{comm.user}</span>
+                              </div>
+                              <span className="text-[10px] text-gray-500">{comm.time}</span>
                             </div>
-                            <div className="flex items-center justify-between text-gray-400 mt-1">
-                              <span className="font-mono text-[11px]">{order.customerPhone}</span>
-                              <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
-                                COD
-                              </span>
-                            </div>
+                            <p className="text-xs text-gray-300 mt-1 pl-6 leading-relaxed">
+                              {comm.text}
+                            </p>
+                            {comm.suggestedOrder && (
+                              <div className="mt-2 pt-1.5 border-t border-rose-900/40 flex items-center justify-between pl-6">
+                                <span className="text-[10px] text-rose-300 font-mono">
+                                  Phát hiện: Ghim #{comm.suggestedOrder.pinNumber} • Size {comm.suggestedOrder.size} • {comm.suggestedOrder.phone}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCaptureCommentOrder(comm)}
+                                  className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold flex items-center gap-1 shadow-sm transition-transform active:scale-95"
+                                  title="Tự động bốc thông tin comment vào form chốt đơn"
+                                >
+                                  <Zap size={11} /> Bắt đơn
+                                </button>
+                              </div>
+                            )}
                           </div>
-                        ))
-                      )}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                        {liveOrders.length === 0 ? (
+                          <p className="text-xs text-gray-500 py-8 text-center">Chưa có đơn nào. Hãy chốt đơn đầu tiên!</p>
+                        ) : (
+                          liveOrders.map(order => (
+                            <div key={order.id} className="bg-gray-800/50 border border-gray-700/60 rounded-xl p-2.5 text-xs">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-white">{order.customerName}</span>
+                                <span className="font-bold text-rose-400">{formatCurrency(order.total)}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-gray-400 mt-1">
+                                <span className="font-mono text-[11px]">{order.customerPhone}</span>
+                                <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
+                                  COD
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -830,6 +994,34 @@ export default function LiveStudio() {
       {/* ============================================================ */}
       {activeTab === "sessions" && (
         <div className="space-y-4">
+          {/* TikTok Live Guidance Banner */}
+          <div className="bg-gradient-to-r from-gray-900 via-rose-950/40 to-gray-900 border border-rose-800/60 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-600/20 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
+                <Radio size={22} className="animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  Kênh TikTok Live: <span className="text-rose-400 font-mono">{tiktokChannel}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-700">● Đã liên kết TikTok</span>
+                </h3>
+                <p className="text-xs text-gray-300 mt-1">
+                  👉 Bạn đang ở tab <b>Lên lịch Live</b>. Hãy bấm nút đỏ <b className="text-rose-400">"Vào phòng Live Studio"</b> bên dưới để vào <b>buồng lái tác chiến trực tiếp</b> (Flash Sale đếm ngược, Ghim deal tự nhảy giá ra web, Luồng bình luận TikTok & Chốt đơn 3 giây)!
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href={`https://www.tiktok.com/${tiktokChannel}/live`}
+                target="_blank"
+                rel="noreferrer"
+                className="btn bg-[#fe2c55] hover:bg-[#e62045] text-white text-xs font-bold py-2 px-3 rounded-xl flex items-center gap-1.5 shadow-md shadow-rose-950/40 transition-transform active:scale-95"
+              >
+                <ExternalLink size={13} /> Mở TikTok Live Kênh
+              </a>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <h3 className="text-base font-bold text-white">Kế Hoạch Các Buổi Livestream TikTok</h3>
