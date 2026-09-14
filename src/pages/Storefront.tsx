@@ -20,7 +20,7 @@ import ProductWatermark from "../components/ui/ProductWatermark";
 import { checkRateLimit, recordOrderAttempt, evaluateOrderRisk } from "../utils/security";
 import type { SecurityConfig } from "../types";
 import { DEFAULT_SECURITY_CONFIG } from "../types";
-import { VIETNAM_PROVINCES, CENTRAL_CITIES, getDistrictsByProvince } from "../utils/vietnamAddress";
+import { NEW_34_PROVINCES, FORMER_PROVINCE_FORWARDING, getDistrictsByProvince } from "../utils/vietnamAddress";
 import { verifyPayment, simulateIncomingPayment } from "../services/paymentGateway";
 import type { PaymentGatewayConfig } from "../types";
 import { DEFAULT_PAYMENT_GATEWAY_CONFIG } from "../types";
@@ -216,7 +216,7 @@ export default function Storefront() {
   const [checkoutForm, setCheckoutForm] = useState({
     name: "",
     phone: "",
-    province: "Hà Nội",
+    province: "TP. Hà Nội",
     district: "Quận Cầu Giấy",
     streetAddress: "",
     note: ""
@@ -1367,7 +1367,12 @@ export default function Storefront() {
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <div>
-                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Tỉnh / Thành phố *</label>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1 flex items-center justify-between">
+                                <span>Tỉnh / Thành phố *</span>
+                                <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold border border-emerald-200">
+                                  34 Tỉnh/TP (NQ 202/2025)
+                                </span>
+                              </label>
                               <select
                                 className="w-full text-xs text-gray-900 px-2.5 py-2 border border-gray-200 focus:border-[#fe2c55] rounded-xl outline-none bg-white font-medium"
                                 value={checkoutForm.province}
@@ -1381,21 +1386,28 @@ export default function Storefront() {
                                   }));
                                 }}
                               >
-                                <optgroup label="⭐ Thành Phố Trực Thuộc TW (Ưu tiên)">
-                                  {CENTRAL_CITIES.map(c => (
-                                    <option key={`central-${c}`} value={c}>{c}</option>
+                                <optgroup label="⭐ 6 THÀNH PHỐ TRỰC THUỘC TRUNG ƯƠNG">
+                                  {NEW_34_PROVINCES.filter(p => p.isCentralCity).map(p => (
+                                    <option key={`central-${p.name}`} value={p.name}>{p.name}</option>
                                   ))}
                                 </optgroup>
-                                <optgroup label="🏛️ Toàn Bộ 63 Tỉnh & Thành Phố (A - Z)">
-                                  {VIETNAM_PROVINCES.map(prov => (
-                                    <option key={`all-${prov}`} value={prov}>{prov}</option>
+                                <optgroup label="🏛️ 28 TỈNH THÀNH (CHÍNH QUYỀN MỚI SAU SÁP NHẬP)">
+                                  {NEW_34_PROVINCES.filter(p => !p.isCentralCity).map(p => (
+                                    <option key={`province-${p.name}`} value={p.name}>{p.name}</option>
+                                  ))}
+                                </optgroup>
+                                <optgroup label="📍 HOẶC CHỌN THEO TÊN TỈNH CŨ (TỰ ĐỘNG CHUYỂN TỈNH MỚI)">
+                                  {FORMER_PROVINCE_FORWARDING.map(f => (
+                                    <option key={`former-${f.former}`} value={f.targetProvince}>
+                                      {f.former} ➔ {f.targetProvince}
+                                    </option>
                                   ))}
                                 </optgroup>
                               </select>
                             </div>
                             <div>
                               <label className="block text-[11px] font-bold text-gray-700 mb-1 flex items-center justify-between">
-                                <span>Quận / Huyện *</span>
+                                <span>Quận / Huyện / Thị xã *</span>
                                 <span className="text-[10px] text-gray-400 font-normal font-mono">{availableDistricts.length} khu vực</span>
                               </label>
                               <select
