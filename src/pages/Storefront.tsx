@@ -26,6 +26,7 @@ import type { PaymentGatewayConfig } from "../types";
 import { DEFAULT_PAYMENT_GATEWAY_CONFIG } from "../types";
 import { playOrderChime } from "../utils/audioAlert";
 import { pushOrderToSupabase } from "../services/supabaseSync";
+import { broadcastNewOrder } from "../utils/orderSyncEvents";
 
 interface CartItem {
   variantId: string;
@@ -545,6 +546,7 @@ export default function Storefront() {
       })
     };
     await db.orders.add(newOrder);
+    broadcastNewOrder(newOrder);
     pushOrderToSupabase(newOrder);
     recordOrderAttempt();
     for (const item of cart) {

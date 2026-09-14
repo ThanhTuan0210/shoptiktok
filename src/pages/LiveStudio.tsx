@@ -10,6 +10,7 @@ import Modal from "../components/ui/Modal";
 import PrintShippingModal from "../components/ui/PrintShippingModal";
 import { formatCurrency, formatDate, formatNumber, generateId, now, today } from "../utils/helpers";
 import { playOrderChime } from "../utils/audioAlert";
+import { broadcastNewOrder } from "../utils/orderSyncEvents";
 
 export default function LiveStudio() {
   const [activeTab, setActiveTab] = useState<"studio" | "sessions" | "reports">("studio");
@@ -294,6 +295,7 @@ export default function LiveStudio() {
     };
 
     await db.orders.add(newOrder);
+    broadcastNewOrder(newOrder);
 
     // Deduct stock
     await db.productVariants.update(selectedVar.id, { stock: Math.max(0, selectedVar.stock - fastOrder.quantity) });

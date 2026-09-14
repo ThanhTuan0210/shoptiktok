@@ -4,8 +4,9 @@ import { db } from "../db/database";
 import {
   ShoppingCart, DollarSign, Package, RotateCcw,
   TrendingUp, AlertTriangle, Truck, CheckCircle2,
-  Clock, Phone, Printer, ArrowRight, Eye, Sparkles
+  Clock, Phone, Printer, ArrowRight, Eye, Sparkles, X, Radio
 } from "lucide-react";
+import { subscribeToNewOrders, type OrderBroadcastPayload } from "../utils/orderSyncEvents";
 import KPICard from "../components/ui/KPICard";
 import PrintShippingModal from "../components/ui/PrintShippingModal";
 import Modal from "../components/ui/Modal";
@@ -61,10 +62,25 @@ export default function Dashboard() {
   const [bestSellers, setBestSellers] = useState<Array<{ name: string; qty: number; revenue: number }>>([]);
   const [returnReasons, setReturnReasons] = useState<Array<{ name: string; value: number }>>([]);
   const [statusDist, setStatusDist] = useState<Array<{ name: string; value: number }>>([]);
+  const [liveOrderToast, setLiveOrderToast] = useState<OrderBroadcastPayload | null>(null);
 
   useEffect(() => {
     loadData();
   }, [period]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToNewOrders((payload) => {
+      loadData();
+      if (payload.orderId !== "FOCUS_SYNC" && payload.customerName) {
+        setLiveOrderToast(payload);
+        const timer = setTimeout(() => {
+          setLiveOrderToast(null);
+        }, 7000);
+        return () => clearTimeout(timer);
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   async function loadData() {
     setLoading(true);
@@ -233,6 +249,54 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
+      {/* Live Real-time Order Popup Banner */}
+      {liveOrderToast && (
+        <div className="relative overflow-hidden bg-gradient-to-r from-rose-950 via-gray-900 to-rose-900 border-2 border-rose-500 rounded-2xl p-4 sm:p-5 shadow-2xl shadow-rose-600/30 animate-fade-in">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-2xl flex-shrink-0 animate-pulse">
+                🎉
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500 text-white flex items-center gap-1 shadow-sm">
+                    <Radio size={12} className="animate-pulse" /> NỔ ĐƠN MỚI REALTIME
+                  </span>
+                  <span className="text-xs font-mono font-bold text-rose-300">
+                    Mã: #{liveOrderToast.orderId}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    • {new Date(liveOrderToast.timestamp).toLocaleTimeString("vi-VN")}
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-white mt-1">
+                  Khách: <span className="text-amber-300">{liveOrderToast.customerName}</span> • Tổng tiền:{" "}
+                  <span className="text-emerald-400 font-black">{formatCurrency(liveOrderToast.totalAmount ?? liveOrderToast.total ?? 0)}</span>
+                </h3>
+                <p className="text-xs text-rose-200/90 mt-0.5">
+                  Đã tự động cập nhật số liệu Dashboard mà không cần tải lại trang (Zero F5)!
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => navigate("/orders")}
+                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg transition-all flex items-center gap-1 shadow"
+              >
+                Xem đơn ngay <ArrowRight size={14} />
+              </button>
+              <button
+                onClick={() => setLiveOrderToast(null)}
+                className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+                title="Đóng thông báo"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header & Period Selector */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
@@ -244,18 +308,27 @@ export default function Dashboard() {
           </div>
           <p className="page-subtitle">Theo dõi tiến độ đơn hàng, doanh số và nhiệm vụ vận hành hôm nay</p>
         </div>
-        <div className="flex gap-2 bg-gray-900 border border-gray-800 rounded-xl p-1">
-          {([7, 30, 90] as const).map(d => (
-            <button
-              key={d}
-              onClick={() => setPeriod(d)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                period === d ? "bg-rose-600 text-white shadow-sm" : "text-gray-400 hover:text-white"
-              }`}
-            >
-              {d} ngày
-            </button>
-          ))}
+        <div className="flex items-center gap-3">
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 shadow-sm">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            Realtime Sync (Zero F5)
+          </span>
+          <div className="flex gap-2 bg-gray-900 border border-gray-800 rounded-xl p-1">
+            {([7, 30, 90] as const).map(d => (
+              <button
+                key={d}
+                onClick={() => setPeriod(d)}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  period === d ? "bg-rose-600 text-white shadow-sm" : "text-gray-400 hover:text-white"
+                }`}
+              >
+                {d} ngày
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -265,7 +338,10 @@ export default function Dashboard() {
           <h2 className="text-sm font-bold uppercase tracking-wider text-gray-300 flex items-center gap-2">
             <Clock size={16} className="text-rose-500" /> Việc cần làm hôm nay (Action Center)
           </h2>
-          <span className="text-xs text-gray-500">Cập nhật tự động theo thời gian thực</span>
+          <span className="text-xs text-emerald-400 font-medium flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Tự động cập nhật không cần F5
+          </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
