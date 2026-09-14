@@ -20,6 +20,7 @@ import ProductWatermark from "../components/ui/ProductWatermark";
 import { checkRateLimit, recordOrderAttempt, evaluateOrderRisk } from "../utils/security";
 import type { SecurityConfig } from "../types";
 import { DEFAULT_SECURITY_CONFIG } from "../types";
+import { VIETNAM_PROVINCES, CENTRAL_CITIES, getDistrictsByProvince } from "../utils/vietnamAddress";
 import { verifyPayment, simulateIncomingPayment } from "../services/paymentGateway";
 import type { PaymentGatewayConfig } from "../types";
 import { DEFAULT_PAYMENT_GATEWAY_CONFIG } from "../types";
@@ -192,7 +193,11 @@ export default function Storefront() {
   const [securityConfig] = useState<SecurityConfig>(() => {
     try {
       const saved = localStorage.getItem("tt_securityConfig");
-      if (saved) return { ...DEFAULT_SECURITY_CONFIG, ...JSON.parse(saved) };
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.maxOrdersPerWindow === 2) parsed.maxOrdersPerWindow = 5;
+        return { ...DEFAULT_SECURITY_CONFIG, ...parsed };
+      }
     } catch {}
     return DEFAULT_SECURITY_CONFIG;
   });
@@ -212,10 +217,14 @@ export default function Storefront() {
     name: "",
     phone: "",
     province: "Hà Nội",
-    district: "",
+    district: "Quận Cầu Giấy",
     streetAddress: "",
     note: ""
   });
+
+  const availableDistricts = useMemo(() => {
+    return getDistrictsByProvince(checkoutForm.province);
+  }, [checkoutForm.province]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
   const [placedOrder, setPlacedOrder] = useState<{ orderId: string; total: number } | null>(null);
   const [placing, setPlacing] = useState(false);
@@ -468,7 +477,7 @@ export default function Storefront() {
     // Rate Limiting Engine (Anti-Flood / Anti-Bot)
     const rateCheck = checkRateLimit(securityConfig);
     if (!rateCheck.allowed) {
-      alert(`⚠️ Nhằm bảo vệ hệ thống khỏi spam đơn ảo, bạn vui lòng chờ ${rateCheck.waitMinutes} phút trước khi đặt đơn tiếp theo hoặc liên hệ hotline ${shopPhone}!`);
+      alert(`⚠️ Nhằm bảo vệ hệ thống khỏi spam đơn ảo (tối đa ${securityConfig.maxOrdersPerWindow || 5} đơn / ${securityConfig.rateLimitWindowMinutes || 15} phút), bạn vui lòng chờ ${rateCheck.waitMinutes} phút trước khi đặt đơn tiếp theo hoặc liên hệ hotline ${shopPhone}!`);
       return;
     }
     const orderRisk = evaluateOrderRisk(checkoutForm.phone, finalTotal, paymentMethod, securityConfig);
@@ -1356,38 +1365,54 @@ export default function Storefront() {
                             />
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <div>
                               <label className="block text-[11px] font-bold text-gray-700 mb-1">Tỉnh / Thành phố *</label>
                               <select
-                                className="w-full text-xs text-gray-900 px-2.5 py-2 border border-gray-200 focus:border-[#fe2c55] rounded-xl outline-none bg-white"
+                                className="w-full text-xs text-gray-900 px-2.5 py-2 border border-gray-200 focus:border-[#fe2c55] rounded-xl outline-none bg-white font-medium"
                                 value={checkoutForm.province}
-                                onChange={e => setCheckoutForm(p => ({ ...p, province: e.target.value }))}
+                                onChange={e => {
+                                  const newProv = e.target.value;
+                                  const newDistricts = getDistrictsByProvince(newProv);
+                                  setCheckoutForm(p => ({
+                                    ...p,
+                                    province: newProv,
+                                    district: newDistricts[0] || ""
+                                  }));
+                                }}
                               >
-                                {[
-                                  "Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng", "Hải Phòng", "Cần Thơ",
-                                  "Bình Dương", "Đồng Nai", "Quảng Ninh", "Bắc Ninh", "Thanh Hóa",
-                                  "Nghệ An", "Thừa Thiên Huế", "Khánh Hòa", "Lâm Đồng", "Hải Dương",
-                                  "Nam Định", "Thái Bình", "Thái Nguyên", "Vĩnh Phúc", "An Giang",
-                                  "Bà Rịa - Vũng Tàu", "Tỉnh khác"
-                                ].map(prov => (
-                                  <option key={prov} value={prov}>{prov}</option>
-                                ))}
+                                <optgroup label="⭐ Thành Phố Trực Thuộc TW (Ưu tiên)">
+                                  {CENTRAL_CITIES.map(c => (
+                                    <option key={`central-${c}`} value={c}>{c}</option>
+                                  ))}
+                                </optgroup>
+                                <optgroup label="🏛️ Toàn Bộ 63 Tỉnh & Thành Phố (A - Z)">
+                                  {VIETNAM_PROVINCES.map(prov => (
+                                    <option key={`all-${prov}`} value={prov}>{prov}</option>
+                                  ))}
+                                </optgroup>
                               </select>
                             </div>
                             <div>
-                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Quận / Huyện</label>
-                              <input
-                                className="w-full text-xs text-gray-900 placeholder-gray-400 px-3 py-2 border border-gray-200 focus:border-[#fe2c55] rounded-xl outline-none"
-                                placeholder="VD: Q. Cầu Giấy"
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1 flex items-center justify-between">
+                                <span>Quận / Huyện *</span>
+                                <span className="text-[10px] text-gray-400 font-normal font-mono">{availableDistricts.length} khu vực</span>
+                              </label>
+                              <select
+                                className="w-full text-xs text-gray-900 px-2.5 py-2 border border-gray-200 focus:border-[#fe2c55] rounded-xl outline-none bg-white font-medium"
                                 value={checkoutForm.district}
                                 onChange={e => setCheckoutForm(p => ({ ...p, district: e.target.value }))}
-                              />
+                              >
+                                {availableDistricts.map(dist => (
+                                  <option key={dist} value={dist}>{dist}</option>
+                                ))}
+                                <option value="Khu vực khác">Khu vực khác (Ghi rõ ở dòng dưới)</option>
+                              </select>
                             </div>
                           </div>
 
                           <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Số nhà, ngõ ngách, tên đường *</label>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Số nhà, ngõ ngách, tên đường, Phường / Xã *</label>
                             <input
                               className="w-full text-xs text-gray-900 placeholder-gray-400 px-3 py-2 border border-gray-200 focus:border-[#fe2c55] rounded-xl outline-none"
                               placeholder="VD: Số 18 ngõ 26 Đỗ Quang, P. Trung Hòa"

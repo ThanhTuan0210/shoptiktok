@@ -422,7 +422,7 @@ export interface SecurityConfig {
 
 export const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
   enableRateLimit: true,
-  maxOrdersPerWindow: 2,
+  maxOrdersPerWindow: 5,
   rateLimitWindowMinutes: 15,
   highValueCodThreshold: 500000,
   enableStockMasking: true,

@@ -84,7 +84,11 @@ export default function Settings() {
   const [securityConfig, setSecurityConfig] = useState<SecurityConfig>(() => {
     try {
       const saved = localStorage.getItem("tt_securityConfig");
-      if (saved) return { ...DEFAULT_SECURITY_CONFIG, ...JSON.parse(saved) };
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.maxOrdersPerWindow === 2) parsed.maxOrdersPerWindow = 5;
+        return { ...DEFAULT_SECURITY_CONFIG, ...parsed };
+      }
     } catch {}
     return DEFAULT_SECURITY_CONFIG;
   });
@@ -1000,7 +1004,7 @@ export default function Settings() {
             <div className="p-3 bg-gray-800/60 rounded-xl border border-gray-700/60 flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-bold text-gray-200">Chặn Bot Spam Đơn (Rate Limit)</p>
-                <p className="text-[10px] text-gray-400">Tối đa 2 đơn / 15 phút trên mỗi thiết bị</p>
+                <p className="text-[10px] text-gray-400">Tối đa {securityConfig.maxOrdersPerWindow || 5} đơn / {securityConfig.rateLimitWindowMinutes || 15} phút trên mỗi thiết bị</p>
               </div>
               <button
                 type="button"
@@ -1044,6 +1048,40 @@ export default function Settings() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             <div>
+              <label className="label text-xs flex items-center justify-between">
+                <span>Giới Hạn Đơn Chống Spam (Rate Limit)</span>
+                <span className="text-emerald-400 font-bold font-mono text-[11px]">{securityConfig.maxOrdersPerWindow || 5} đơn / {securityConfig.rateLimitWindowMinutes || 15}p</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-[10px] text-gray-400 block mb-0.5">Số đơn tối đa:</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    className="input text-xs font-mono"
+                    value={securityConfig.maxOrdersPerWindow || 5}
+                    onChange={e => updateSecurity({ maxOrdersPerWindow: Math.max(1, parseInt(e.target.value, 10) || 5) })}
+                    placeholder="5"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400 block mb-0.5">Trong khung giờ (phút):</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={120}
+                    className="input text-xs font-mono"
+                    value={securityConfig.rateLimitWindowMinutes || 15}
+                    onChange={e => updateSecurity({ rateLimitWindowMinutes: Math.max(1, parseInt(e.target.value, 10) || 15) })}
+                    placeholder="15"
+                  />
+                </div>
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">Mỗi thiết bị trình duyệt chỉ được đặt tối đa số đơn này trong khung giờ quy định.</p>
+            </div>
+
+            <div>
               <label className="label text-xs">Chữ Vân Chìm Watermark Phủ Trên Ảnh</label>
               <input
                 className="input text-xs font-mono"
@@ -1053,7 +1091,9 @@ export default function Settings() {
               />
               <p className="text-[10px] text-gray-400 mt-1">Watermark này tự động phủ chéo mờ trên mọi ảnh sản phẩm ở Storefront.</p>
             </div>
+          </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label text-xs">Ngưỡng Cảnh Báo Đơn COD Giá Trị Cao (VNĐ)</label>
               <input
