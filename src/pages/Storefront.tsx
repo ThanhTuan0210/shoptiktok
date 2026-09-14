@@ -16,6 +16,10 @@ import type { PromoSettings } from "../types";
 import { DEFAULT_PROMO_SETTINGS } from "../types";
 import FloatingContact from "../components/ui/FloatingContact";
 import WebShield from "../components/ui/WebShield";
+import ProductWatermark from "../components/ui/ProductWatermark";
+import { checkRateLimit, recordOrderAttempt, evaluateOrderRisk } from "../utils/security";
+import type { SecurityConfig } from "../types";
+import { DEFAULT_SECURITY_CONFIG } from "../types";
 import { verifyPayment, simulateIncomingPayment } from "../services/paymentGateway";
 import type { PaymentGatewayConfig } from "../types";
 import { DEFAULT_PAYMENT_GATEWAY_CONFIG } from "../types";
@@ -184,6 +188,14 @@ export default function Storefront() {
 
   // Checkout
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [securityConfig] = useState<SecurityConfig>(() => {
+    try {
+      const saved = localStorage.getItem("tt_securityConfig");
+      if (saved) return { ...DEFAULT_SECURITY_CONFIG, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_SECURITY_CONFIG;
+  });
+  const [isOnline, setIsOnline] = useState<boolean>(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [bankPaymentVerified, setBankPaymentVerified] = useState<boolean>(false);
   const [paymentTxId, setPaymentTxId] = useState<string>("");
   const [paymentCountdown, setPaymentCountdown] = useState<number>(600); // 10 minutes
@@ -236,6 +248,18 @@ export default function Storefront() {
 
   useEffect(() => { setActiveImageIdx(0); setSelectedVariant(null); }, [selectedProduct]);
   useEffect(() => { if (!isCheckoutOpen) { setCheckoutStep("cart"); } }, [isCheckoutOpen]);
+
+  // Network Connectivity Auto-Recovery
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   // VietQR Real-Time Polling Verification & Countdown
   useEffect(() => {
@@ -440,6 +464,14 @@ export default function Storefront() {
       return;
     }
 
+    // Rate Limiting Engine (Anti-Flood / Anti-Bot)
+    const rateCheck = checkRateLimit(securityConfig);
+    if (!rateCheck.allowed) {
+      alert(`⚠️ Nhằm bảo vệ hệ thống khỏi spam đơn ảo, bạn vui lòng chờ ${rateCheck.waitMinutes} phút trước khi đặt đơn tiếp theo hoặc liên hệ hotline ${shopPhone}!`);
+      return;
+    }
+    const orderRisk = evaluateOrderRisk(checkoutForm.phone, finalTotal, paymentMethod, securityConfig);
+
     // 2. Rate Limiting: 20 seconds between orders from same browser
     const lastOrderTs = parseInt(localStorage.getItem("tt_last_order_ts") || "0", 10);
     const nowTs = Date.now();
@@ -477,6 +509,9 @@ export default function Storefront() {
       trackingNumber: "",
       liveSessionId: activeLiveSession ? activeLiveSession.id : undefined,
       note: `Đặt qua Website${activeLiveSession ? ` (Phiên Live: ${activeLiveSession.title})` : ""} | Thanh toán: ${paymentMethod === "cod" ? "COD khi nhận" : "Chuyển khoản"}${appliedVoucher ? ` | Voucher: ${appliedVoucher.code} (-${formatCurrency(discountAmount)})` : ""}${checkoutForm.note ? ` | Ghi chú: ${checkoutForm.note}` : ""}`,
+      isSuspicious: orderRisk.isSuspicious,
+      suspiciousReason: orderRisk.reason,
+      idempotencyKey: `IDEM-${orderId}-${Date.now()}`,
       tiktokFeeRate: 0,
       tiktokFeeAmount: 0,
       paymentMethod,
@@ -500,6 +535,7 @@ export default function Storefront() {
       })
     };
     await db.orders.add(newOrder);
+    recordOrderAttempt();
     for (const item of cart) {
       await db.stockMovements.add({
         id: generateId(),
@@ -784,6 +820,7 @@ export default function Storefront() {
                   className="bg-white rounded-2xl overflow-hidden border border-gray-200/80 hover:border-rose-300 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col group"
                 >
                   <div className="relative bg-gray-100 overflow-hidden" style={{ aspectRatio: '1/1' }}>
+                {securityConfig.enableWatermark && <ProductWatermark text={securityConfig.watermarkText} className="z-10" />}
                     <img
                       src={img}
                       alt={product.name}
@@ -853,6 +890,7 @@ export default function Storefront() {
             {/* Gallery Left */}
             <div className="w-full md:w-[46%] shrink-0 bg-gray-50 flex flex-col border-r border-gray-100">
               <div className="relative bg-gray-100 overflow-hidden" style={{ aspectRatio: '1/1' }}>
+                {securityConfig.enableWatermark && <ProductWatermark text={securityConfig.watermarkText} className="z-10" />}
                 <img
                   key={activeImageIdx}
                   src={gallery[activeImageIdx]}
@@ -910,7 +948,11 @@ export default function Storefront() {
                 <span className="text-gray-300">|</span>
                 {selStats && selStats.totalSold > 0 && <><span>Đã bán <strong>{formatSold(selStats.totalSold)}</strong></span><span className="text-gray-300">|</span></>}
                 <span className={selStats && selStats.totalStock > 0 ? "text-emerald-600 font-bold":"text-red-500 font-bold"}>
-                  {selStats && selStats.totalStock > 0 ? `Còn hàng (${selStats.totalStock})` : "Tạm hết hàng"}
+                  {selStats && selStats.totalStock > 0
+                  ? (securityConfig.enableStockMasking
+                      ? (selStats.totalStock <= 5 ? `🔥 Chỉ còn ${selStats.totalStock} bộ cuối` : "✓ Còn hàng sẵn sàng giao")
+                      : `Còn hàng (${selStats.totalStock})`)
+                  : "Tạm hết hàng"}
                 </span>
               </div>
 

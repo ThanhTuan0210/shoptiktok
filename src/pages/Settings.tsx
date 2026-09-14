@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { db } from "../db/database";
-import type { AppSettings, PromoSettings, WebShieldSettings, PaymentGatewayConfig, CourierConfig, SupabaseSyncConfig, TikTokBridgeConfig } from "../types";
-import { DEFAULT_PROMO_SETTINGS, DEFAULT_WEBSHIELD_SETTINGS, DEFAULT_PAYMENT_GATEWAY_CONFIG, DEFAULT_COURIER_CONFIG, DEFAULT_SUPABASE_SYNC_CONFIG, DEFAULT_TIKTOK_BRIDGE_CONFIG } from "../types";
+import type { SecurityConfig, AppSettings, PromoSettings, WebShieldSettings, PaymentGatewayConfig, CourierConfig, SupabaseSyncConfig, TikTokBridgeConfig } from "../types";
+import { DEFAULT_SECURITY_CONFIG, DEFAULT_PROMO_SETTINGS, DEFAULT_WEBSHIELD_SETTINGS, DEFAULT_PAYMENT_GATEWAY_CONFIG, DEFAULT_COURIER_CONFIG, DEFAULT_SUPABASE_SYNC_CONFIG, DEFAULT_TIKTOK_BRIDGE_CONFIG } from "../types";
 import { Settings as SettingsIcon, Save, Lock, Download, Upload, Trash2, Database, ShieldCheck, Banknote, Gift, Ticket, Sparkles, Percent, Bell, Truck, Cloud, Video, CheckCircle2, AlertTriangle, ExternalLink, RefreshCw } from "lucide-react";
 import { testSupabaseConnection, generateSupabaseSQLSchema } from "../services/supabaseSync";
 import { exportDatabaseBackup } from "../utils/exportData";
@@ -81,6 +81,20 @@ export default function Settings() {
   const [showSqlModal, setShowSqlModal] = useState(false);
 
   // Enterprise: TikTok Bridge
+  const [securityConfig, setSecurityConfig] = useState<SecurityConfig>(() => {
+    try {
+      const saved = localStorage.getItem("tt_securityConfig");
+      if (saved) return { ...DEFAULT_SECURITY_CONFIG, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_SECURITY_CONFIG;
+  });
+
+  const updateSecurity = (partial: Partial<SecurityConfig>) => {
+    const updated = { ...securityConfig, ...partial };
+    setSecurityConfig(updated);
+    localStorage.setItem("tt_securityConfig", JSON.stringify(updated));
+  };
+
   const [tiktokBridge, setTiktokBridge] = useState<TikTokBridgeConfig>(() => {
     try {
       const saved = localStorage.getItem("tt_tiktokBridge");
@@ -924,7 +938,121 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Database stats */}
+      {/* Security, Anti-Spam & Competitor Defense Center */}
+      <div className="card border-emerald-900/40 bg-gradient-to-br from-gray-900 via-gray-900 to-emerald-950/20">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-gray-800">
+          <div>
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <ShieldCheck size={20} className="text-emerald-400" />
+              Trung Tâm An Ninh, Chống Spam & Phòng Vệ Đối Thủ
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Bảo vệ kho hàng khỏi bot spam đơn ảo, ngăn chặn đối thủ cào dữ liệu doanh số và bảo vệ bản quyền ảnh độc quyền.
+            </p>
+          </div>
+          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-900/50 text-emerald-300 border border-emerald-700/60">
+            🛡️ Lá Chắn Đang Kích Hoạt
+          </span>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Toggle Rate Limit */}
+            <div className="p-3 bg-gray-800/60 rounded-xl border border-gray-700/60 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-gray-200">Chặn Bot Spam Đơn (Rate Limit)</p>
+                <p className="text-[10px] text-gray-400">Tối đa 2 đơn / 15 phút trên mỗi thiết bị</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => updateSecurity({ enableRateLimit: !securityConfig.enableRateLimit })}
+                className={"relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out " + (securityConfig.enableRateLimit ? "bg-emerald-600" : "bg-gray-700")}
+              >
+                <span className={"inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out " + (securityConfig.enableRateLimit ? "translate-x-4" : "translate-x-0")} />
+              </button>
+            </div>
+
+            {/* Toggle Stock Masking */}
+            <div className="p-3 bg-gray-800/60 rounded-xl border border-gray-700/60 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-gray-200">Mặt Nạ Tồn Kho (Stock Masking)</p>
+                <p className="text-[10px] text-gray-400">Ẩn số tồn thật khỏi đối thủ soi doanh thu</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => updateSecurity({ enableStockMasking: !securityConfig.enableStockMasking })}
+                className={"relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out " + (securityConfig.enableStockMasking ? "bg-emerald-600" : "bg-gray-700")}
+              >
+                <span className={"inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out " + (securityConfig.enableStockMasking ? "translate-x-4" : "translate-x-0")} />
+              </button>
+            </div>
+
+            {/* Toggle Watermark */}
+            <div className="p-3 bg-gray-800/60 rounded-xl border border-gray-700/60 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-gray-200">Đóng Dấu Chìm Ảnh (Watermark)</p>
+                <p className="text-[10px] text-gray-400">Chống trộm ảnh sản phẩm độc quyền</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => updateSecurity({ enableWatermark: !securityConfig.enableWatermark })}
+                className={"relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out " + (securityConfig.enableWatermark ? "bg-emerald-600" : "bg-gray-700")}
+              >
+                <span className={"inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out " + (securityConfig.enableWatermark ? "translate-x-4" : "translate-x-0")} />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div>
+              <label className="label text-xs">Chữ Vân Chìm Watermark Phủ Trên Ảnh</label>
+              <input
+                className="input text-xs font-mono"
+                value={securityConfig.watermarkText}
+                onChange={e => updateSecurity({ watermarkText: e.target.value })}
+                placeholder="VD: Henr.Studio • Thiết Kế Độc Quyền"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">Watermark này tự động phủ chéo mờ trên mọi ảnh sản phẩm ở Storefront.</p>
+            </div>
+
+            <div>
+              <label className="label text-xs">Ngưỡng Cảnh Báo Đơn COD Giá Trị Cao (VNĐ)</label>
+              <input
+                type="number"
+                className="input text-xs font-mono"
+                value={securityConfig.highValueCodThreshold}
+                onChange={e => updateSecurity({ highValueCodThreshold: Number(e.target.value) || 500000 })}
+                placeholder="500000"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">Các đơn COD trên mức này sẽ tự động gắn cờ đỏ cảnh báo nhân viên gọi xác nhận.</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="label text-xs flex items-center justify-between">
+              <span>Danh Sách Đen Số Điện Thoại Bùng Hàng / Spam (Mỗi SĐT một dòng)</span>
+              <span className="text-rose-400 text-[10px] font-bold font-mono">
+                {securityConfig.phoneBlacklist.length} SĐT bị chặn/cảnh báo
+              </span>
+            </label>
+            <textarea
+              rows={3}
+              className="input text-xs font-mono text-rose-300 bg-gray-900 border-rose-900/40 focus:border-rose-500"
+              placeholder="0912345678&#10;0987654321&#10;0355123456"
+              value={securityConfig.phoneBlacklist.join("\n")}
+              onChange={e => {
+                const list = e.target.value.split("\n").map(s => s.trim()).filter(Boolean);
+                updateSecurity({ phoneBlacklist: list });
+              }}
+            />
+            <p className="text-[10px] text-gray-400 mt-1">
+              Khi số điện thoại nằm trong danh sách này đặt hàng, đơn hàng lập tức bị gắn cờ đỏ ⚠️ Cảnh báo bùng hàng trên danh sách đơn.
+            </p>
+          </div>
+        </div>
+      </div>
+
+            {/* Database stats */}
       <div className="card">
         <h2 className="text-base font-semibold text-white flex items-center gap-2 mb-4">
           <Database size={18} className="text-purple-400" /> Thống kê Cơ sở dữ liệu

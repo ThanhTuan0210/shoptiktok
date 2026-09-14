@@ -12,6 +12,9 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Henr.Studio" />
+    <!-- Content Security Policy & Security Meta -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:;" />
+
 
     <!-- OpenGraph / Social Share (Zalo, TikTok, Facebook) -->
     <meta property="og:type" content="website" />
@@ -38,6 +41,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   </head>
   <body>
+    <noscript>
+      <div style="padding: 20px; text-align: center; background: #111827; color: #f3f4f6; font-family: sans-serif;">
+        Vui lòng bật JavaScript trên trình duyệt của bạn để trải nghiệm đầy đủ tính năng của Henr.Studio.
+      </div>
+    </noscript>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

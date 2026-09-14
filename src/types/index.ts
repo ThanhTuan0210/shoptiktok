@@ -149,6 +149,9 @@ export interface Order {
   carrierStatus?: string;
   paymentProofTxId?: string;
   exchanges?: OrderExchangeRecord[];
+  isSuspicious?: boolean;
+  suspiciousReason?: string;
+  idempotencyKey?: string;
   paymentMethod?: string;
   liveSessionId?: string;
   cancelReason?: string;
@@ -401,3 +404,29 @@ export interface OrderExchangeRecord {
   status: "pending_pickup" | "in_transit" | "completed";
   createdAt: string;
 }
+
+// =====================
+// SECURITY & ANTI-FRAUD
+// =====================
+
+export interface SecurityConfig {
+  enableRateLimit: boolean;
+  maxOrdersPerWindow: number;
+  rateLimitWindowMinutes: number;
+  highValueCodThreshold: number;
+  enableStockMasking: boolean;
+  enableWatermark: boolean;
+  watermarkText: string;
+  phoneBlacklist: string[];
+}
+
+export const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
+  enableRateLimit: true,
+  maxOrdersPerWindow: 2,
+  rateLimitWindowMinutes: 15,
+  highValueCodThreshold: 500000,
+  enableStockMasking: true,
+  enableWatermark: true,
+  watermarkText: "Henr.Studio • Thiết Kế Độc Quyền",
+  phoneBlacklist: ["0912345678", "0987654321"],
+};

@@ -5,7 +5,7 @@ import type { Order, OrderStatus, Return, Product, ProductVariant, CourierConfig
 import { DEFAULT_COURIER_CONFIG } from "../types";
 import {
   Plus, Download, Upload, X,
-  Eye, Edit2, Trash2, Package, Printer, Truck, Phone, MessageSquare, MessageSquareText, Scan, CheckCircle2, RotateCcw, XCircle
+  Eye, Edit2, Trash2, Package, Printer, Truck, Phone, MessageSquare, MessageSquareText, Scan, CheckCircle2, RotateCcw, XCircle, ShieldAlert
 } from "lucide-react";
 import Modal from "../components/ui/Modal";
 import SearchInput from "../components/ui/SearchInput";
@@ -694,6 +694,12 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                   <td className="whitespace-nowrap text-xs">{formatDate(o.orderDate)}</td>
                   <td>
                     <p className="font-medium text-white">{o.customerName}</p>
+                    {o.isSuspicious && (
+                      <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-rose-300 bg-rose-950/70 border border-rose-800/80 rounded px-1.5 py-0.5 max-w-[220px]" title={o.suspiciousReason || "Cảnh báo rủi ro đơn hàng"}>
+                        <ShieldAlert size={11} className="text-rose-400 shrink-0" />
+                        <span className="truncate">{o.suspiciousReason || "Đơn nguy cơ cao"}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                       <div className="flex items-center gap-1">
                         <span className="text-xs text-gray-400 font-mono">{o.customerPhone || "—"}</span>
