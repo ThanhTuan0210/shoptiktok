@@ -5,7 +5,7 @@ import type { Order, OrderStatus, Return, Product, ProductVariant, CourierConfig
 import { DEFAULT_COURIER_CONFIG } from "../types";
 import {
   Plus, Download, Upload, X,
-  Eye, Edit2, Trash2, Package, Printer, Truck, Phone, MessageSquare, MessageSquareText, Scan, CheckCircle2, RotateCcw, XCircle, ShieldAlert
+  Eye, Edit2, Trash2, Package, Printer, Truck, Phone, MessageSquare, MessageSquareText, Scan, CheckCircle2, RotateCcw, XCircle, ShieldAlert, Cloud, RefreshCw
 } from "lucide-react";
 import Modal from "../components/ui/Modal";
 import SearchInput from "../components/ui/SearchInput";
@@ -15,6 +15,7 @@ import QuickMessageModal from "../components/ui/QuickMessageModal";
 import BarcodeScannerModal from "../components/ui/BarcodeScannerModal";
 import PartialExchangeModal from "../components/orders/PartialExchangeModal";
 import { dispatchOrderToCourier } from "../services/courierGateway";
+import { performFullTwoWaySync } from "../services/supabaseSync";
 import type { CourierConfig } from "../types";
 import {
   formatCurrency, formatDate, generateId, now, today,
@@ -133,6 +134,21 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
       alert("Lỗi khi kết nối bưu cục: " + (e?.message || "Vui lòng thử lại"));
     }
   };
+  const [syncingCloud, setSyncingCloud] = useState(false);
+
+  const handleSyncCloud = async () => {
+    setSyncingCloud(true);
+    try {
+      const res = await performFullTwoWaySync();
+      alert(res.message);
+      loadOrders();
+    } catch (e: any) {
+      alert("Lỗi đồng bộ đám mây: " + (e?.message || "Không xác định"));
+    } finally {
+      setSyncingCloud(false);
+    }
+  };
+
   const [page, setPage] = useState(1);
   const PER_PAGE = 20;
 
@@ -437,6 +453,16 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={handleSyncCloud}
+            disabled={syncingCloud}
+            className="btn-secondary text-xs flex items-center gap-1.5 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/10 transition-colors"
+            title="Đồng bộ 2 chiều với cơ sở dữ liệu đám mây Supabase PostgreSQL"
+          >
+            <Cloud size={15} className={syncingCloud ? "animate-spin text-indigo-400" : "text-indigo-400"} />
+            <span>{syncingCloud ? "Đang đồng bộ..." : "Đồng bộ Đám mây"}</span>
+          </button>
           <label className="btn-secondary cursor-pointer text-xs">
             <Upload size={15} />
             Import Excel

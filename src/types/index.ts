@@ -365,9 +365,9 @@ export interface SupabaseSyncConfig {
 }
 
 export const DEFAULT_SUPABASE_SYNC_CONFIG: SupabaseSyncConfig = {
-  supabaseUrl: "",
-  supabaseAnonKey: "",
-  autoSync: false,
+  supabaseUrl: "https://btlzbzlcfmesccnqbqic.supabase.co",
+  supabaseAnonKey: "sb_publishable_p7BLEF5uPTofb6YotWRTww_xVbFMp8e",
+  autoSync: true,
 };
 
 export interface TikTokBridgeConfig {

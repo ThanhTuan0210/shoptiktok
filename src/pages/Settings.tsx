@@ -3,7 +3,7 @@ import { db } from "../db/database";
 import type { SecurityConfig, AppSettings, PromoSettings, WebShieldSettings, PaymentGatewayConfig, CourierConfig, SupabaseSyncConfig, TikTokBridgeConfig } from "../types";
 import { DEFAULT_SECURITY_CONFIG, DEFAULT_PROMO_SETTINGS, DEFAULT_WEBSHIELD_SETTINGS, DEFAULT_PAYMENT_GATEWAY_CONFIG, DEFAULT_COURIER_CONFIG, DEFAULT_SUPABASE_SYNC_CONFIG, DEFAULT_TIKTOK_BRIDGE_CONFIG } from "../types";
 import { Settings as SettingsIcon, Save, Lock, Download, Upload, Trash2, Database, ShieldCheck, Banknote, Gift, Ticket, Sparkles, Percent, Bell, Truck, Cloud, Video, CheckCircle2, AlertTriangle, ExternalLink, RefreshCw } from "lucide-react";
-import { testSupabaseConnection, generateSupabaseSQLSchema } from "../services/supabaseSync";
+import { testSupabaseConnection, generateSupabaseSQLSchema, performFullTwoWaySync } from "../services/supabaseSync";
 import { exportDatabaseBackup } from "../utils/exportData";
 
 
@@ -110,12 +110,34 @@ export default function Settings() {
     localStorage.setItem("tt_tiktokBridge", JSON.stringify(tiktokBridge));
   };
 
+  const [syncingSupabase, setSyncingSupabase] = useState(false);
+  const [syncSummary, setSyncSummary] = useState<string | null>(null);
+
   const handleTestSupabase = async () => {
     setTestingSupabase(true);
     setSupabaseTestResult(null);
     const res = await testSupabaseConnection(supabaseConfig);
     setTestingSupabase(false);
     setSupabaseTestResult(res.message);
+  };
+
+  const handleFullSync = async () => {
+    setSyncingSupabase(true);
+    setSyncSummary(null);
+    try {
+      const res = await performFullTwoWaySync(supabaseConfig);
+      setSyncSummary(res.message);
+      if (res.success) {
+        setSupabaseTestResult("✓ Kết nối & Đồng bộ đám mây thành công!");
+        loadStats();
+      } else {
+        setSupabaseTestResult("Lỗi: " + res.message);
+      }
+    } catch (e: any) {
+      setSyncSummary("Lỗi đồng bộ: " + (e?.message || "Không xác định"));
+    } finally {
+      setSyncingSupabase(false);
+    }
   };
 
   const [promoSettings, setPromoSettings] = useState<PromoSettings>(() => {
@@ -813,7 +835,17 @@ export default function Settings() {
               Đồng bộ dữ liệu thời gian thực (Realtime) giữa máy chủ shop ở nhà, máy nhân viên CSKH và máy quét kho.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={handleFullSync}
+              disabled={syncingSupabase || testingSupabase}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 transition-colors shadow-sm"
+              title="Đẩy tất cả đơn hàng & kho hàng từ máy lên đám mây, và kéo đơn mới về"
+            >
+              <RefreshCw size={13} className={syncingSupabase ? "animate-spin" : ""} />
+              {syncingSupabase ? "Đang đồng bộ..." : "🚀 Đồng bộ 2 chiều ngay"}
+            </button>
             <button
               type="button"
               onClick={handleTestSupabase}
@@ -830,6 +862,13 @@ export default function Settings() {
           <div className={"p-3 rounded-xl border text-xs flex items-center gap-2 " + (supabaseTestResult.includes("thành công") ? "bg-emerald-950/40 border-emerald-800 text-emerald-300" : "bg-red-950/40 border-red-800 text-red-300")}>
             {supabaseTestResult.includes("thành công") ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
             <span>{supabaseTestResult}</span>
+          </div>
+        )}
+
+        {syncSummary && (
+          <div className="p-3 rounded-xl border text-xs bg-indigo-950/40 border-indigo-700 text-indigo-200 flex items-center gap-2 animate-fade-in">
+            <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+            <span>{syncSummary}</span>
           </div>
         )}
 
