@@ -218,7 +218,7 @@ export default function Storefront() {
     name: "",
     phone: "",
     province: "TP. Hà Nội",
-    district: "Quận Cầu Giấy",
+    district: "Phường Cầu Giấy (Dịch Vọng, Nghĩa Tân, Yên Hòa)",
     streetAddress: "",
     note: ""
   });
@@ -1409,8 +1409,10 @@ export default function Storefront() {
                             </div>
                             <div>
                               <label className="block text-[11px] font-bold text-gray-700 mb-1 flex items-center justify-between">
-                                <span>Quận / Huyện / Thị xã *</span>
-                                <span className="text-[10px] text-gray-400 font-normal font-mono">{availableDistricts.length} khu vực</span>
+                                <span>Phường / Xã / Thị trấn *</span>
+                                <span className="text-[10px] text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded font-bold border border-rose-200">
+                                  Chính quyền 2 cấp
+                                </span>
                               </label>
                               <select
                                 className="w-full text-xs text-gray-900 px-2.5 py-2 border border-gray-200 focus:border-[#fe2c55] rounded-xl outline-none bg-white font-medium"
@@ -1420,16 +1422,16 @@ export default function Storefront() {
                                 {availableDistricts.map(dist => (
                                   <option key={dist} value={dist}>{dist}</option>
                                 ))}
-                                <option value="Khu vực khác">Khu vực khác (Ghi rõ ở dòng dưới)</option>
+                                <option value="Phường / Xã khác (Ghi rõ ở dòng dưới)">Phường / Xã khác (Ghi rõ ở dòng dưới)</option>
                               </select>
                             </div>
                           </div>
 
                           <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Số nhà, ngõ ngách, tên đường, Phường / Xã *</label>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Số nhà, ngõ ngách, tên thôn/xóm/bản/đường *</label>
                             <input
                               className="w-full text-xs text-gray-900 placeholder-gray-400 px-3 py-2 border border-gray-200 focus:border-[#fe2c55] rounded-xl outline-none"
-                              placeholder="VD: Số 18 ngõ 26 Đỗ Quang, P. Trung Hòa"
+                              placeholder="VD: Số 18 ngõ 26 Đỗ Quang (hoặc Thôn 3, Xóm Cầu)"
                               value={checkoutForm.streetAddress}
                               onChange={e => setCheckoutForm(p => ({ ...p, streetAddress: e.target.value }))}
                             />
