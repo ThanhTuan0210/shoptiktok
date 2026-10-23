@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+﻿import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState, lazy, Suspense } from "react";
 import Layout from "./components/layout/Layout";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
@@ -18,13 +18,15 @@ const IssuesWrapper = lazy(() => import("./pages/IssuesWrapper"));
 const Customers = lazy(() => import("./pages/Customers"));
 const Partners = lazy(() => import("./pages/Partners"));
 const Settings = lazy(() => import("./pages/Settings"));
+const ShopeeCenter = lazy(() => import("./pages/ShopeeCenter"));
+const OmniDashboard = lazy(() => import("./pages/OmniDashboard"));
 
 // Loading spinner fallback for lazy components
 function PageLoading() {
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 p-8">
       <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
-      <p className="text-xs text-gray-500">Đang tải...</p>
+      <p className="text-xs text-gray-500">Äang táº£i...</p>
     </div>
   );
 }
@@ -109,10 +111,10 @@ export default function App() {
 
         const returnReasonsSample = ["wrong_size", "wrong_color", "not_as_described", "changed_mind", "defective"];
         const cancelReasonsSample = [
-          "Khách đổi ý không muốn mua nữa",
-          "Trùng đơn / Khách đặt nhầm 2 lần",
-          "Không liên lạc được số điện thoại",
-          "Thời gian giao dự kiến lâu",
+          "KhÃ¡ch Ä‘á»•i Ã½ khÃ´ng muá»‘n mua ná»¯a",
+          "TrÃ¹ng Ä‘Æ¡n / KhÃ¡ch Ä‘áº·t nháº§m 2 láº§n",
+          "KhÃ´ng liÃªn láº¡c Ä‘Æ°á»£c sá»‘ Ä‘iá»‡n thoáº¡i",
+          "Thá»i gian giao dá»± kiáº¿n lÃ¢u",
         ];
 
         for (let i = 0; i < allOrders.length; i++) {
@@ -137,7 +139,7 @@ export default function App() {
     return (
       <div style={{ minHeight: "100vh", backgroundColor: "#030712", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px" }}>
         <div style={{ width: "40px", height: "40px", border: "3px solid #f43f5e", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-        <p style={{ color: "#9ca3af", fontSize: "14px", fontFamily: "sans-serif" }}>Đang tải Henr.Studio...</p>
+        <p style={{ color: "#9ca3af", fontSize: "14px", fontFamily: "sans-serif" }}>Äang táº£i Henr.Studio...</p>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -156,6 +158,8 @@ export default function App() {
           <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
           <Route path="/inventory" element={<Layout><Inventory /></Layout>} />
           <Route path="/orders" element={<Layout><OrdersWrapper /></Layout>} />
+<Route path="/shopee" element={<Layout><ShopeeCenter /></Layout>} />
+<Route path="/omni-dashboard" element={<Layout><OmniDashboard /></Layout>} />
           <Route path="/live" element={<Layout><LiveStudio /></Layout>} />
           <Route path="/shipping" element={<Navigate to="/orders" replace />} />
           <Route path="/finance" element={<Layout><FinanceWrapper /></Layout>} />
@@ -172,3 +176,4 @@ export default function App() {
     </ErrorBoundary>
   );
 }
+
