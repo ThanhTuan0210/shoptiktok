@@ -119,9 +119,9 @@ export default function App() {
 
         const returnReasonsSample = ["wrong_size", "wrong_color", "not_as_described", "changed_mind", "defective"];
         const cancelReasonsSample = [
-          "KhÃ¡ch Ä‘á»•i Ã½ khÃ´ng muá»‘n mua ná»¯a",
-          "TrÃ¹ng Ä‘Æ¡n / KhÃ¡ch Ä‘áº·t nháº§m 2 láº§n",
-          "KhÃ´ng liÃªn láº¡c Ä‘Æ°á»£c sá»‘ Ä‘iá»‡n thoáº¡i",
+          "Khách đổi ý không muốn mua nữa",
+          "Trùng đơn / Khách đặt nhầm 2 lần",
+          "Không liên lạc được số điện thoại",
           "Thá»i gian giao dá»± kiáº¿n lÃ¢u",
         ];
 
