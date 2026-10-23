@@ -1,4 +1,4 @@
-﻿import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState, lazy, Suspense } from "react";
 import Layout from "./components/layout/Layout";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
@@ -19,6 +19,13 @@ const Customers = lazy(() => import("./pages/Customers"));
 const Partners = lazy(() => import("./pages/Partners"));
 const Settings = lazy(() => import("./pages/Settings"));
 const ShopeeCenter = lazy(() => import("./pages/ShopeeCenter"));
+const ShopeeOverview = lazy(() => import("./pages/shopee/ShopeeOverview"));
+const ShopeeOrders = lazy(() => import("./pages/shopee/ShopeeOrders"));
+const ShopeeSPX = lazy(() => import("./pages/shopee/ShopeeSPX"));
+const ShopeeFinance = lazy(() => import("./pages/shopee/ShopeeFinance"));
+const ShopeeLive = lazy(() => import("./pages/shopee/ShopeeLive"));
+const ShopeeMarketing = lazy(() => import("./pages/shopee/ShopeeMarketing"));
+const ShopeeChat = lazy(() => import("./pages/shopee/ShopeeChat"));
 const OmniDashboard = lazy(() => import("./pages/OmniDashboard"));
 
 // Loading spinner fallback for lazy components
@@ -158,8 +165,14 @@ export default function App() {
           <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
           <Route path="/inventory" element={<Layout><Inventory /></Layout>} />
           <Route path="/orders" element={<Layout><OrdersWrapper /></Layout>} />
-<Route path="/shopee" element={<Layout><ShopeeCenter /></Layout>} />
-<Route path="/omni-dashboard" element={<Layout><OmniDashboard /></Layout>} />
+<Route path="/shopee" element={<Layout><ShopeeOverview /></Layout>} />
+          <Route path="/shopee/orders" element={<Layout><ShopeeOrders /></Layout>} />
+          <Route path="/shopee/spx" element={<Layout><ShopeeSPX /></Layout>} />
+          <Route path="/shopee/finance" element={<Layout><ShopeeFinance /></Layout>} />
+          <Route path="/shopee/live" element={<Layout><ShopeeLive /></Layout>} />
+          <Route path="/shopee/marketing" element={<Layout><ShopeeMarketing /></Layout>} />
+          <Route path="/shopee/chat" element={<Layout><ShopeeChat /></Layout>} />
+          <Route path="/omni-dashboard" element={<Layout><OmniDashboard /></Layout>} />
           <Route path="/live" element={<Layout><LiveStudio /></Layout>} />
           <Route path="/shipping" element={<Navigate to="/orders" replace />} />
           <Route path="/finance" element={<Layout><FinanceWrapper /></Layout>} />

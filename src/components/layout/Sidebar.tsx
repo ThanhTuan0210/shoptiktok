@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { NavLink, useLocation, Link } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import {
   LayoutDashboard, Package, ShoppingCart, DollarSign,
   Settings, RotateCcw, Users, UserCheck, ExternalLink,
-  Search, Radio, ShoppingBag, Globe, BarChart3, ChevronDown, ChevronRight
+  Search, Radio, ShoppingBag, Globe, BarChart3, ChevronDown, ChevronRight,
+  Truck, Tag, MessageCircle, Flame
 } from "lucide-react";
 
 export default function Sidebar() {
-  const location = useLocation();
   const role = sessionStorage.getItem("tt_adminRole") || "admin";
   const isStaff = role === "staff";
 
@@ -27,7 +27,7 @@ export default function Sidebar() {
           <NavLink to="/orders" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${isActive ? 'bg-rose-600 text-white' : 'text-gray-400'}`}>
             <ShoppingCart size={16} /> Đơn hàng đóng gói
           </NavLink>
-          <NavLink to="/shopee" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${isActive ? 'bg-[#EE4D2D] text-white' : 'text-gray-400'}`}>
+          <NavLink to="/shopee/orders" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${isActive ? 'bg-[#EE4D2D] text-white' : 'text-gray-400'}`}>
             <ShoppingBag size={16} /> Shopee SPX
           </NavLink>
           <NavLink to="/inventory" className={({isActive}) => `flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${isActive ? 'bg-rose-600 text-white' : 'text-gray-400'}`}>
@@ -78,7 +78,110 @@ export default function Sidebar() {
       {/* Structured Channels Menu */}
       <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-4 text-xs">
         
-        {/* PHÂN HỆ 1: TIKTOK SHOP */}
+        {/* PHÂN HỆ 1: SHOPEE MALL (ĐÃ TÁCH TỪNG TRANG CON) */}
+        <div className="space-y-1">
+          <button
+            onClick={() => setShopeeOpen(!shopeeOpen)}
+            className="w-full flex items-center justify-between px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-orange-400 hover:text-orange-300"
+          >
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#EE4D2D]"></span>
+              Kênh Shopee Mall
+            </span>
+            {shopeeOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </button>
+
+          {shopeeOpen && (
+            <div className="space-y-0.5 pl-1.5 border-l border-orange-500/20 ml-2">
+              <NavLink
+                to="/shopee"
+                end
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
+                    isActive ? "bg-[#EE4D2D] text-white font-bold" : "text-gray-400 hover:text-orange-300 hover:bg-gray-900"
+                  }`
+                }
+              >
+                <LayoutDashboard size={14} />
+                <span>Tổng quan Shopee</span>
+              </NavLink>
+
+              <NavLink
+                to="/shopee/orders"
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
+                    isActive ? "bg-[#EE4D2D] text-white font-bold" : "text-gray-400 hover:text-orange-300 hover:bg-gray-900"
+                  }`
+                }
+              >
+                <ShoppingBag size={14} />
+                <span>Quản lý đơn hàng</span>
+              </NavLink>
+
+              <NavLink
+                to="/shopee/spx"
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
+                    isActive ? "bg-[#EE4D2D] text-white font-bold" : "text-gray-400 hover:text-orange-300 hover:bg-gray-900"
+                  }`
+                }
+              >
+                <Truck size={14} />
+                <span>Điều phối SPX Express</span>
+              </NavLink>
+
+              <NavLink
+                to="/shopee/finance"
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
+                    isActive ? "bg-[#EE4D2D] text-white font-bold" : "text-gray-400 hover:text-orange-300 hover:bg-gray-900"
+                  }`
+                }
+              >
+                <DollarSign size={14} />
+                <span>Ví Shopee & Đối soát</span>
+              </NavLink>
+
+              <NavLink
+                to="/shopee/live"
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
+                    isActive ? "bg-[#EE4D2D] text-white font-bold" : "text-gray-400 hover:text-orange-300 hover:bg-gray-900"
+                  }`
+                }
+              >
+                <Flame size={14} className="text-orange-400" />
+                <span>Shopee Live & Flash Sale</span>
+              </NavLink>
+
+              <NavLink
+                to="/shopee/marketing"
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
+                    isActive ? "bg-[#EE4D2D] text-white font-bold" : "text-gray-400 hover:text-orange-300 hover:bg-gray-900"
+                  }`
+                }
+              >
+                <Tag size={14} />
+                <span>Marketing & Vouchers</span>
+              </NavLink>
+
+              <NavLink
+                to="/shopee/chat"
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
+                    isActive ? "bg-[#EE4D2D] text-white font-bold" : "text-gray-400 hover:text-orange-300 hover:bg-gray-900"
+                  }`
+                }
+              >
+                <MessageCircle size={14} />
+                <span>Shopee Chat Khách</span>
+              </NavLink>
+            </div>
+          )}
+        </div>
+
+        {/* PHÂN HỆ 2: TIKTOK SHOP */}
         <div className="space-y-1">
           <button
             onClick={() => setTiktokOpen(!tiktokOpen)}
@@ -96,27 +199,25 @@ export default function Sidebar() {
               <NavLink
                 to="/dashboard"
                 className={({ isActive }) =>
-                  `flex items-center justify-between px-2.5 py-2 rounded-lg font-medium transition-colors ${
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
                     isActive ? "bg-rose-600 text-white font-bold" : "text-gray-400 hover:text-gray-200 hover:bg-gray-900"
                   }`
                 }
               >
-                <div className="flex items-center gap-2">
-                  <LayoutDashboard size={15} />
-                  <span>Tổng quan TikTok</span>
-                </div>
+                <LayoutDashboard size={14} />
+                <span>Tổng quan TikTok</span>
               </NavLink>
 
               <NavLink
                 to="/live"
                 className={({ isActive }) =>
-                  `flex items-center justify-between px-2.5 py-2 rounded-lg font-medium transition-colors ${
+                  `flex items-center justify-between px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
                     isActive ? "bg-rose-600 text-white font-bold" : "text-gray-400 hover:text-gray-200 hover:bg-gray-900"
                   }`
                 }
               >
                 <div className="flex items-center gap-2">
-                  <Radio size={15} className="text-rose-400" />
+                  <Radio size={14} className="text-rose-400" />
                   <span>TikTok Live Studio</span>
                 </div>
                 <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
@@ -125,50 +226,13 @@ export default function Sidebar() {
               <NavLink
                 to="/partners"
                 className={({ isActive }) =>
-                  `flex items-center justify-between px-2.5 py-2 rounded-lg font-medium transition-colors ${
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
                     isActive ? "bg-rose-600 text-white font-bold" : "text-gray-400 hover:text-gray-200 hover:bg-gray-900"
                   }`
                 }
               >
-                <div className="flex items-center gap-2">
-                  <UserCheck size={15} />
-                  <span>KOL & Tiếp Thị Liên Kết</span>
-                </div>
-              </NavLink>
-            </div>
-          )}
-        </div>
-
-        {/* PHÂN HỆ 2: SHOPEE MALL / CENTRE */}
-        <div className="space-y-1">
-          <button
-            onClick={() => setShopeeOpen(!shopeeOpen)}
-            className="w-full flex items-center justify-between px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-orange-400 hover:text-orange-300"
-          >
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#EE4D2D]"></span>
-              Kênh Shopee Mall
-            </span>
-            {shopeeOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </button>
-
-          {shopeeOpen && (
-            <div className="space-y-0.5 pl-1.5 border-l border-orange-500/20 ml-2">
-              <NavLink
-                to="/shopee"
-                className={({ isActive }) =>
-                  `flex items-center justify-between px-2.5 py-2 rounded-lg font-medium transition-colors ${
-                    isActive ? "bg-[#EE4D2D] text-white font-bold shadow-md shadow-orange-950" : "text-gray-400 hover:text-orange-300 hover:bg-gray-900"
-                  }`
-                }
-              >
-                <div className="flex items-center gap-2">
-                  <ShoppingBag size={15} className="text-[#EE4D2D]" />
-                  <span>Shopee Seller Centre</span>
-                </div>
-                <span className="text-[9px] px-1 py-0.2 rounded bg-orange-500/20 text-[#EE4D2D] font-mono font-bold">
-                  7 MOD
-                </span>
+                <UserCheck size={14} />
+                <span>KOL & Tiếp Thị Liên Kết</span>
               </NavLink>
             </div>
           )}
@@ -192,10 +256,10 @@ export default function Sidebar() {
               <Link
                 to="/shop"
                 target="_blank"
-                className="flex items-center justify-between px-2.5 py-2 rounded-lg font-medium text-sky-300 hover:bg-gray-900 transition-colors"
+                className="flex items-center justify-between px-2.5 py-1.5 rounded-lg font-medium text-sky-300 hover:bg-gray-900 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <Globe size={15} />
+                  <Globe size={14} />
                   <span>Giao Diện Web Khách</span>
                 </div>
                 <ExternalLink size={12} className="text-gray-500" />
@@ -204,10 +268,10 @@ export default function Sidebar() {
               <Link
                 to="/track"
                 target="_blank"
-                className="flex items-center justify-between px-2.5 py-2 rounded-lg font-medium text-gray-400 hover:text-gray-200 hover:bg-gray-900 transition-colors"
+                className="flex items-center justify-between px-2.5 py-1.5 rounded-lg font-medium text-gray-400 hover:text-gray-200 hover:bg-gray-900 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <Search size={15} />
+                  <Search size={14} />
                   <span>Tra Cứu Vận Đơn Khách</span>
                 </div>
                 <ExternalLink size={12} className="text-gray-500" />
@@ -234,72 +298,72 @@ export default function Sidebar() {
               <NavLink
                 to="/orders"
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-2.5 py-2 rounded-lg font-medium transition-colors ${
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
                     isActive ? "bg-gray-800 text-white font-bold" : "text-gray-400 hover:text-gray-200 hover:bg-gray-900"
                   }`
                 }
               >
-                <ShoppingCart size={15} />
+                <ShoppingCart size={14} />
                 <span>Đơn hàng tất cả sàn</span>
               </NavLink>
 
               <NavLink
                 to="/inventory"
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-2.5 py-2 rounded-lg font-medium transition-colors ${
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
                     isActive ? "bg-gray-800 text-white font-bold" : "text-gray-400 hover:text-gray-200 hover:bg-gray-900"
                   }`
                 }
               >
-                <Package size={15} />
+                <Package size={14} />
                 <span>Sản phẩm & Kho may</span>
               </NavLink>
 
               <NavLink
                 to="/finance"
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-2.5 py-2 rounded-lg font-medium transition-colors ${
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
                     isActive ? "bg-gray-800 text-white font-bold" : "text-gray-400 hover:text-gray-200 hover:bg-gray-900"
                   }`
                 }
               >
-                <DollarSign size={15} />
+                <DollarSign size={14} />
                 <span>Tài chính & Lợi nhuận</span>
               </NavLink>
 
               <NavLink
                 to="/issues"
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-2.5 py-2 rounded-lg font-medium transition-colors ${
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
                     isActive ? "bg-gray-800 text-white font-bold" : "text-gray-400 hover:text-gray-200 hover:bg-gray-900"
                   }`
                 }
               >
-                <RotateCcw size={15} />
+                <RotateCcw size={14} />
                 <span>Hoàn hàng & Khiếu nại</span>
               </NavLink>
 
               <NavLink
                 to="/customers"
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-2.5 py-2 rounded-lg font-medium transition-colors ${
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
                     isActive ? "bg-gray-800 text-white font-bold" : "text-gray-400 hover:text-gray-200 hover:bg-gray-900"
                   }`
                 }
               >
-                <Users size={15} />
+                <Users size={14} />
                 <span>Khách hàng (CRM)</span>
               </NavLink>
 
               <NavLink
                 to="/settings"
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-2.5 py-2 rounded-lg font-medium transition-colors ${
+                  `flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
                     isActive ? "bg-gray-800 text-white font-bold" : "text-gray-400 hover:text-gray-200 hover:bg-gray-900"
                   }`
                 }
               >
-                <Settings size={15} />
+                <Settings size={14} />
                 <span>Cấu hình hệ thống</span>
               </NavLink>
             </div>
@@ -311,7 +375,7 @@ export default function Sidebar() {
       {/* Footer Info */}
       <div className="p-3 border-t border-gray-900 text-center">
         <span className="text-[10px] text-gray-600 font-mono">
-          Vercel Live: Production v2.4
+          Vercel Live: Production v2.5
         </span>
       </div>
     </aside>
