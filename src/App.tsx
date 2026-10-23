@@ -4,6 +4,7 @@ import Layout from "./components/layout/Layout";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
 import { db } from "./db/database";
 import { seedDatabase, PRODUCTS } from "./utils/seedData";
+import { generateShopeeOrders } from "./utils/generateShopeeOrders";
 import productImages from "./product_images.json";
 
 // Code-split pages with React.lazy
@@ -134,6 +135,18 @@ export default function App() {
             const cReason = cancelReasonsSample[i % cancelReasonsSample.length];
             await db.orders.update(ord.id, { cancelReason: cReason });
           }
+        }
+
+        // Tự động kiểm tra và thêm 65 đơn hàng Shopee vào hệ thống
+        const currentShopeeOrders = allOrders.filter(o => 
+          o.channel === "shopee" || 
+          Boolean(o.shopeeOrderId) || 
+          (o.note || "").toLowerCase().includes("shopee")
+        );
+        if (currentShopeeOrders.length < 50) {
+          const countToAdd = 65 - currentShopeeOrders.length;
+          await generateShopeeOrders(Math.max(50, countToAdd));
+          console.log(`[Shopee] Đã tự động nạp sẵn ${countToAdd} đơn hàng Shopee vào cơ sở dữ liệu.`);
         }
 
         setReady(true);

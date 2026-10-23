@@ -86,24 +86,6 @@ export default function ShopeeOverview() {
               Gian hàng chính hãng: <strong>@{shopeeShopName}</strong> • Phí cố định & thanh toán sàn: <strong>{shopeeFeeRate}%</strong>.
             </p>
           </div>
-          <div>
-            <button
-              onClick={async () => {
-                await generateShopeeOrders(50);
-                const all = await db.orders.toArray();
-                const shopeeOnly = all.filter(o => 
-                  o.channel === "shopee" || 
-                  Boolean(o.shopeeOrderId) || 
-                  (o.note || "").toLowerCase().includes("shopee")
-                );
-                setOrders(shopeeOnly);
-                alert("Đã tạo thêm 50 đơn hàng Shopee ngẫu nhiên thành công!");
-              }}
-              className="px-4 py-2.5 rounded-xl bg-white text-[#EE4D2D] hover:bg-orange-50 font-extrabold text-xs flex items-center gap-2 shadow-lg transition-all"
-            >
-              <PlusCircle size={15} /> Tạo Nhanh 50 Đơn Shopee
-            </button>
-          </div>
         </div>
 
         {/* 4 Khối Việc Cần Làm Ngay */}
