@@ -3,10 +3,11 @@ import { db } from "../../db/database";
 import type { Order } from "../../types";
 import {
   ShoppingBag, DollarSign, CheckCircle2,
-  Clock, RotateCcw, ArrowUpRight, Percent, RefreshCw, Truck
+  Clock, RotateCcw, ArrowUpRight, Percent, RefreshCw, Truck, PlusCircle
 } from "lucide-react";
 import { formatCurrency } from "../../utils/helpers";
 import { Link } from "react-router-dom";
+import { generateShopeeOrders } from "../../utils/generateShopeeOrders";
 
 export default function ShopeeOverview() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -84,6 +85,24 @@ export default function ShopeeOverview() {
             <p className="text-orange-100 text-sm mt-1">
               Gian hàng chính hãng: <strong>@{shopeeShopName}</strong> • Phí cố định & thanh toán sàn: <strong>{shopeeFeeRate}%</strong>.
             </p>
+          </div>
+          <div>
+            <button
+              onClick={async () => {
+                await generateShopeeOrders(50);
+                const all = await db.orders.toArray();
+                const shopeeOnly = all.filter(o => 
+                  o.channel === "shopee" || 
+                  Boolean(o.shopeeOrderId) || 
+                  (o.note || "").toLowerCase().includes("shopee")
+                );
+                setOrders(shopeeOnly);
+                alert("Đã tạo thêm 50 đơn hàng Shopee ngẫu nhiên thành công!");
+              }}
+              className="px-4 py-2.5 rounded-xl bg-white text-[#EE4D2D] hover:bg-orange-50 font-extrabold text-xs flex items-center gap-2 shadow-lg transition-all"
+            >
+              <PlusCircle size={15} /> Tạo Nhanh 50 Đơn Shopee
+            </button>
           </div>
         </div>
 
@@ -163,6 +182,24 @@ export default function ShopeeOverview() {
           <p className="text-2xl font-black text-white mt-2">{formatCurrency(stats.totalRevenue)}</p>
           <div className="flex items-center gap-1.5 mt-2 text-xs text-emerald-400">
             <ArrowUpRight size={13} /> +18.4% so với tháng trước
+          </div>
+          <div>
+            <button
+              onClick={async () => {
+                await generateShopeeOrders(50);
+                const all = await db.orders.toArray();
+                const shopeeOnly = all.filter(o => 
+                  o.channel === "shopee" || 
+                  Boolean(o.shopeeOrderId) || 
+                  (o.note || "").toLowerCase().includes("shopee")
+                );
+                setOrders(shopeeOnly);
+                alert("Đã tạo thêm 50 đơn hàng Shopee ngẫu nhiên thành công!");
+              }}
+              className="px-4 py-2.5 rounded-xl bg-white text-[#EE4D2D] hover:bg-orange-50 font-extrabold text-xs flex items-center gap-2 shadow-lg transition-all"
+            >
+              <PlusCircle size={15} /> Tạo Nhanh 50 Đơn Shopee
+            </button>
           </div>
         </div>
 

@@ -2,10 +2,11 @@ import { useEffect, useState, useMemo } from "react";
 import { db } from "../../db/database";
 import type { Order } from "../../types";
 import {
-  ShoppingBag, Search, Filter, Eye, Printer, Check, ExternalLink, Download, Upload
+  ShoppingBag, Search, Filter, Eye, Printer, Check, ExternalLink, Download, Upload, PlusCircle
 } from "lucide-react";
 import { formatCurrency, formatDate } from "../../utils/helpers";
 import { exportShopeeTemplate, importOrdersFromExcel } from "../../utils/exportData";
+import { generateShopeeOrders } from "../../utils/generateShopeeOrders";
 import Modal from "../../components/ui/Modal";
 import { useSearchParams } from "react-router-dom";
 
@@ -175,10 +176,21 @@ export default function ShopeeOrders() {
 
         <div className="flex items-center gap-2">
           <button
+            onClick={async () => {
+              const added = await generateShopeeOrders(50);
+              setSuccessMsg(`Đã tạo giả lập thành công ${added} đơn hàng Shopee mới!`);
+              await loadShopeeData();
+              setTimeout(() => setSuccessMsg(null), 4000);
+            }}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-orange-950 transition-all"
+          >
+            <PlusCircle size={14} /> +50 Đơn Ảo Shopee
+          </button>
+          <button
             onClick={exportShopeeTemplate}
             className="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold flex items-center gap-1.5 border border-gray-700"
           >
-            <Download size={14} /> Mẫu Excel Shopee
+            <Download size={14} /> Mẫu Excel
           </button>
           <label className="px-3.5 py-2 rounded-xl bg-[#EE4D2D] hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md">
             <Upload size={14} /> Nhập Đơn Shopee
