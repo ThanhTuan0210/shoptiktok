@@ -165,24 +165,6 @@ export default function ShopeeOverview() {
           <div className="flex items-center gap-1.5 mt-2 text-xs text-emerald-400">
             <ArrowUpRight size={13} /> +18.4% so với tháng trước
           </div>
-          <div>
-            <button
-              onClick={async () => {
-                await generateShopeeOrders(50);
-                const all = await db.orders.toArray();
-                const shopeeOnly = all.filter(o => 
-                  o.channel === "shopee" || 
-                  Boolean(o.shopeeOrderId) || 
-                  (o.note || "").toLowerCase().includes("shopee")
-                );
-                setOrders(shopeeOnly);
-                alert("Đã tạo thêm 50 đơn hàng Shopee ngẫu nhiên thành công!");
-              }}
-              className="px-4 py-2.5 rounded-xl bg-white text-[#EE4D2D] hover:bg-orange-50 font-extrabold text-xs flex items-center gap-2 shadow-lg transition-all"
-            >
-              <PlusCircle size={15} /> Tạo Nhanh 50 Đơn Shopee
-            </button>
-          </div>
         </div>
 
         <div className="bg-gray-900/90 border border-gray-800 rounded-2xl p-5">
