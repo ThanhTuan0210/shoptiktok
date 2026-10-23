@@ -1,4 +1,4 @@
-import { format, parseISO, isValid } from "date-fns";
+﻿import { format, parseISO, isValid } from "date-fns";
 import { vi } from "date-fns/locale";
 
 export const formatCurrency = (amount: number): string => {
@@ -53,13 +53,13 @@ export const today = (): string => format(new Date(), "yyyy-MM-dd");
 
 export const getOrderStatusLabel = (status: string): string => {
   const map: Record<string, string> = {
-    pending: "Chờ xác nhận",
-    processing: "Đang chuẩn bị",
-    shipping: "Đang giao hàng",
-    delivered: "Đã giao hàng",
-    returned: "Đã hoàn trả",
-    cancelled: "Đã huỷ đơn",
-    return_requested: "Yêu cầu hoàn trả",
+    pending: "Chá» xÃ¡c nháº­n",
+    processing: "Äang chuáº©n bá»‹",
+    shipping: "Äang giao hÃ ng",
+    delivered: "ÄÃ£ giao hÃ ng",
+    returned: "ÄÃ£ hoÃ n tráº£",
+    cancelled: "ÄÃ£ huá»· Ä‘Æ¡n",
+    return_requested: "YÃªu cáº§u hoÃ n tráº£",
   };
   return map[status] || status;
 };
@@ -79,24 +79,24 @@ export const getOrderStatusClass = (status: string): string => {
 
 export const getReturnReasonLabel = (reason: string): string => {
   const map: Record<string, string> = {
-    wrong_size: "Sai kích thước / size",
-    wrong_color: "Sai màu sắc",
-    wrong_product: "Giao nhầm sản phẩm",
-    defective: "Hàng lỗi / rách chỉ",
-    not_as_described: "Không giống mô tả ảnh",
-    changed_mind: "Đổi ý không muốn mua",
-    damaged_shipping: "Hư hỏng do vận chuyển",
-    other: "Lý do khác",
+    wrong_size: "Sai kÃ­ch thÆ°á»›c / size",
+    wrong_color: "Sai mÃ u sáº¯c",
+    wrong_product: "Giao nháº§m sáº£n pháº©m",
+    defective: "HÃ ng lá»—i / rÃ¡ch chá»‰",
+    not_as_described: "KhÃ´ng giá»‘ng mÃ´ táº£ áº£nh",
+    changed_mind: "Äá»•i Ã½ khÃ´ng muá»‘n mua",
+    damaged_shipping: "HÆ° há»ng do váº­n chuyá»ƒn",
+    other: "LÃ½ do khÃ¡c",
   };
   return map[reason] || reason;
 };
 
 export const getReturnStatusLabel = (status: string): string => {
   const map: Record<string, string> = {
-    pending: "Chờ xử lý",
-    received: "Đã nhận hàng về",
-    restocked: "Đã nhập lại kho",
-    disposed: "Đã tiêu huỷ / thanh lý",
+    pending: "Chá» xá»­ lÃ½",
+    received: "ÄÃ£ nháº­n hÃ ng vá»",
+    restocked: "ÄÃ£ nháº­p láº¡i kho",
+    disposed: "ÄÃ£ tiÃªu huá»· / thanh lÃ½",
   };
   return map[status] || status;
 };
@@ -113,27 +113,27 @@ export const getReturnStatusClass = (status: string): string => {
 
 export const getDefectiveTypeLabel = (type: string): string => {
   const map: Record<string, string> = {
-    manufacturing: "Lỗi sản xuất / may mặc",
-    storage: "Hư hại trong kho lưu",
-    shipping: "Hư hỏng do vận chuyển",
-    customer_use: "Khách thử làm rách/bẩn",
-    other: "Lỗi khác",
+    manufacturing: "Lá»—i sáº£n xuáº¥t / may máº·c",
+    storage: "HÆ° háº¡i trong kho lÆ°u",
+    shipping: "HÆ° há»ng do váº­n chuyá»ƒn",
+    customer_use: "KhÃ¡ch thá»­ lÃ m rÃ¡ch/báº©n",
+    other: "Lá»—i khÃ¡c",
   };
   return map[type] || type;
 };
 
 export const getExpenseCategoryLabel = (cat: string): string => {
   const map: Record<string, string> = {
-    cogs: "Giá vốn hàng bán (COGS)",
-    tiktok_fee: "Phí sàn TikTok Shop",
-    shopee_fee: "Phí sàn Shopee (Cố định & Thanh toán)",
-    advertising: "Quảng cáo Ads",
-    shipping: "Cước phí vận chuyển",
-    labor: "Lương & Nhân công",
-    warehouse: "Thuê mặt bằng kho",
-    packaging: "Bao bì & Đóng gói",
-    livestream: "Chi phí Livestream / KOC",
-    other: "Chi phí vận hành khác",
+    cogs: "GiÃ¡ vá»‘n hÃ ng bÃ¡n (COGS)",
+    tiktok_fee: "PhÃ­ sÃ n TikTok Shop",
+    shopee_fee: "PhÃ­ sÃ n Shopee (Cá»‘ Ä‘á»‹nh & Thanh toÃ¡n)",
+    advertising: "Quáº£ng cÃ¡o Ads",
+    shipping: "CÆ°á»›c phÃ­ váº­n chuyá»ƒn",
+    labor: "LÆ°Æ¡ng & NhÃ¢n cÃ´ng",
+    warehouse: "ThuÃª máº·t báº±ng kho",
+    packaging: "Bao bÃ¬ & ÄÃ³ng gÃ³i",
+    livestream: "Chi phÃ­ Livestream / KOC",
+    other: "Chi phÃ­ váº­n hÃ nh khÃ¡c",
   };
   return map[cat] || cat;
 };
@@ -145,29 +145,45 @@ export const getChannelLabel = (channel?: string, order?: { tiktokOrderId?: stri
   return "TikTok Shop";
 };
 
-export const getChannelBadge = (channel?: string, order?: { tiktokOrderId?: string; shopeeOrderId?: string; liveSessionId?: string }): { label: string; bg: string; text: string; border: string; icon: string } => {
+export const getChannelBadge = (channel?: string, order?: { tiktokOrderId?: string; shopeeOrderId?: string; liveSessionId?: string }) => {
   const ch = getChannelLabel(channel, order);
   if (ch === "Shopee") {
-    return { label: "Shopee", bg: "bg-orange-500/10", text: "text-orange-400", border: "border-orange-500/30", icon: "🛍️" };
+    return (
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-500/20 text-[#EE4D2D] border border-orange-500/30">
+        🛍️ Shopee
+      </span>
+    );
   }
   if (ch === "Website") {
-    return { label: "Website", bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/30", icon: "🌐" };
+    return (
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+        🌐 Website
+      </span>
+    );
   }
   if (ch === "Live") {
-    return { label: "Live Stream", bg: "bg-rose-500/10", text: "text-rose-400", border: "border-rose-500/30", icon: "🔴" };
+    return (
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
+        🔴 Live
+      </span>
+    );
   }
-  return { label: "TikTok Shop", bg: "bg-pink-500/10", text: "text-pink-400", border: "border-pink-500/30", icon: "🎵" };
+  return (
+    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+      🎵 TikTok
+    </span>
+  );
 };
 
 export const getStockMovementLabel = (type: string): string => {
   const map: Record<string, string> = {
-    purchase: "Nhập thêm hàng",
-    sale: "Xuất bán đơn hàng",
-    return_in: "Khách trả hàng về kho",
-    defective: "Xuất huỷ hàng lỗi",
-    adjustment: "Kiểm kê điều chỉnh kho",
-    gift: "Quà tặng kèm / Tri ân",
-    loss: "Thất thoát / Hao hụt",
+    purchase: "Nháº­p thÃªm hÃ ng",
+    sale: "Xuáº¥t bÃ¡n Ä‘Æ¡n hÃ ng",
+    return_in: "KhÃ¡ch tráº£ hÃ ng vá» kho",
+    defective: "Xuáº¥t huá»· hÃ ng lá»—i",
+    adjustment: "Kiá»ƒm kÃª Ä‘iá»u chá»‰nh kho",
+    gift: "QuÃ  táº·ng kÃ¨m / Tri Ã¢n",
+    loss: "Tháº¥t thoÃ¡t / Hao há»¥t",
   };
   return map[type] || type;
 };
@@ -181,3 +197,4 @@ export const truncate = (str: string, maxLen: number): string => {
   if (str.length <= maxLen) return str;
   return str.slice(0, maxLen) + "...";
 };
+
