@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DollarSign, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Download, Filter, Search, CheckCircle, XCircle } from "lucide-react";
+import { Download, Search, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import type { Order } from "../../types";
 import { formatCurrency, formatDate } from "../../utils/helpers";
 import * as XLSX from "xlsx";
@@ -9,14 +9,17 @@ export interface OrderProfitReportProps {
 }
 
 export default function OrderProfitReport({ orders }: OrderProfitReportProps) {
-  const [channelFilter, setChannelFilter] = useState<"all" | "tiktok" | "web">("all");
+  const [channelFilter, setChannelFilter] = useState<"all" | "shopee" | "tiktok" | "web">("all");
   const [marginFilter, setMarginFilter] = useState<"all" | "high" | "medium" | "low" | "loss">("all");
   const [search, setSearch] = useState("");
 
   // Calculate realistic profit metrics per order
   const profitData = useMemo(() => {
     return orders.map(order => {
-      const isTikTok = !!order.tiktokOrderId;
+      const isShopee = order.channel === "shopee" || Boolean(order.shopeeOrderId) || (order.note || "").toLowerCase().includes("shopee");
+      const isTikTok = (order.channel === "tiktok" || !order.channel) && !isShopee && !(order.tiktokOrderId || "").startsWith("WEB-");
+      const isWeb = order.channel === "website" || (order.tiktokOrderId || "").startsWith("WEB-");
+
       const isReturned = order.status === "returned" || order.status === "return_requested";
       const isCancelled = order.status === "cancelled";
 
@@ -28,10 +31,15 @@ export default function OrderProfitReport({ orders }: OrderProfitReportProps) {
         return sum + cost * item.quantity;
       }, 0);
 
-      // TikTok Fee (~4.5% if TikTok order)
-      const platformFee = isTikTok && !isCancelled
-        ? Math.round(order.total * (order.tiktokFeeRate ? order.tiktokFeeRate / 100 : 0.045))
-        : 0;
+      // Platform Fee
+      let platformFee = 0;
+      if (!isCancelled) {
+        if (isShopee) {
+          platformFee = order.shopeeFeeAmount || Math.round(order.total * ((order.shopeeFeeRate || 9.5) / 100));
+        } else if (isTikTok) {
+          platformFee = order.tiktokFeeAmount || Math.round(order.total * ((order.tiktokFeeRate || 1.8) / 100));
+        }
+      }
 
       // Packaging cost (Box, zip, labels, tape ~ 5.000đ)
       const packagingCost = isCancelled ? 0 : 5000;
@@ -54,7 +62,9 @@ export default function OrderProfitReport({ orders }: OrderProfitReportProps) {
 
       return {
         order,
+        isShopee,
         isTikTok,
+        isWeb,
         isReturned,
         isCancelled,
         revenue,
@@ -72,8 +82,9 @@ export default function OrderProfitReport({ orders }: OrderProfitReportProps) {
   const filtered = useMemo(() => {
     return profitData.filter(item => {
       // Channel
+      if (channelFilter === "shopee" && !item.isShopee) return false;
       if (channelFilter === "tiktok" && !item.isTikTok) return false;
-      if (channelFilter === "web" && item.isTikTok) return false;
+      if (channelFilter === "web" && !item.isWeb) return false;
 
       // Margin
       if (marginFilter === "high" && item.marginPct < 30) return false;
@@ -84,7 +95,7 @@ export default function OrderProfitReport({ orders }: OrderProfitReportProps) {
       // Search
       if (search.trim()) {
         const q = search.toLowerCase();
-        const code = (item.order.tiktokOrderId || item.order.id).toLowerCase();
+        const code = (item.order.shopeeOrderId || item.order.tiktokOrderId || item.order.id).toLowerCase();
         const name = (item.order.customerName || "").toLowerCase();
         const phone = (item.order.customerPhone || "").toLowerCase();
         return code.includes(q) || name.includes(q) || phone.includes(q);
@@ -116,15 +127,15 @@ export default function OrderProfitReport({ orders }: OrderProfitReportProps) {
 
   function exportToExcel() {
     const rows = filtered.map(item => ({
-      "Mã đơn hàng": item.order.tiktokOrderId || item.order.id,
-      "Kênh bán": item.isTikTok ? "TikTok Shop" : "Website Henr.Studio",
+      "Mã đơn hàng": item.order.shopeeOrderId || item.order.tiktokOrderId || item.order.id,
+      "Kênh bán": item.isShopee ? "Shopee" : item.isTikTok ? "TikTok Shop" : "Website Henr.Studio",
       "Ngày đặt": formatDate(item.order.orderDate),
       "Khách hàng": item.order.customerName,
       "SĐT": item.order.customerPhone || "-",
       "Trạng thái": item.order.status,
       "Doanh thu (VNĐ)": item.revenue,
       "Giá vốn COGS (VNĐ)": item.cogs,
-      "Phí sàn TikTok (VNĐ)": item.platformFee,
+      "Phí sàn (VNĐ)": item.platformFee,
       "Phí đóng gói (VNĐ)": item.packagingCost,
       "Lợi nhuận ròng (VNĐ)": item.netProfit,
       "Tỷ suất lợi nhuận (%)": item.marginPct + "%",
@@ -155,7 +166,7 @@ export default function OrderProfitReport({ orders }: OrderProfitReportProps) {
         <div className="card-sm bg-gray-900 border-gray-800">
           <p className="text-gray-400 text-[11px]">Phí Sàn & Đóng Gói</p>
           <p className="text-lg font-bold text-purple-400 font-mono mt-1">{formatCurrency(totals.fee + totals.pack)}</p>
-          <span className="text-[10px] text-gray-500">TikTok Fee + Hộp Zip</span>
+          <span className="text-[10px] text-gray-500">Phí Sàn + Hộp đóng gói</span>
         </div>
 
         <div className="card-sm bg-gray-900 border-gray-800">
@@ -196,20 +207,28 @@ export default function OrderProfitReport({ orders }: OrderProfitReportProps) {
               Tất cả kênh ({profitData.length})
             </button>
             <button
+              onClick={() => setChannelFilter("shopee")}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                channelFilter === "shopee" ? "bg-[#EE4D2D] text-white" : "text-gray-400 hover:text-white"
+              }`}
+            >
+              🛍️ Shopee ({profitData.filter(p => p.isShopee).length})
+            </button>
+            <button
               onClick={() => setChannelFilter("tiktok")}
               className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
                 channelFilter === "tiktok" ? "bg-rose-600 text-white" : "text-gray-400 hover:text-white"
               }`}
             >
-              TikTok Shop ({profitData.filter(p => p.isTikTok).length})
+              🎵 TikTok Shop ({profitData.filter(p => p.isTikTok).length})
             </button>
             <button
               onClick={() => setChannelFilter("web")}
               className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
-                channelFilter === "web" ? "bg-rose-600 text-white" : "text-gray-400 hover:text-white"
+                channelFilter === "web" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"
               }`}
             >
-              Website ({profitData.filter(p => !p.isTikTok).length})
+              🌐 Website ({profitData.filter(p => p.isWeb).length})
             </button>
           </div>
 
@@ -274,12 +293,16 @@ export default function OrderProfitReport({ orders }: OrderProfitReportProps) {
               </tr>
             ) : (
               filtered.slice(0, 50).map(item => {
-                const code = item.order.tiktokOrderId || item.order.id.slice(-8);
+                const code = item.order.shopeeOrderId || item.order.tiktokOrderId || item.order.id.slice(-8);
                 return (
                   <tr key={item.order.id} className="hover:bg-gray-800/40 transition-colors">
                     <td>
                       <div className="flex items-center gap-1.5 font-mono text-xs">
-                        {item.isTikTok ? (
+                        {item.isShopee ? (
+                          <span className="p-0.5 rounded bg-orange-500/20 text-[#EE4D2D] text-[10px] font-sans font-bold flex items-center gap-0.5" title="Đơn từ Shopee">
+                            🛍️ SP
+                          </span>
+                        ) : item.isTikTok ? (
                           <span className="p-0.5 rounded bg-rose-500/20 text-rose-400" title="Đơn từ TikTok Shop">
                             <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
                               <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
@@ -298,26 +321,25 @@ export default function OrderProfitReport({ orders }: OrderProfitReportProps) {
                       <p className="font-medium text-white">{item.order.customerName}</p>
                       <p className="text-[10px] text-gray-500 font-mono">{item.order.customerPhone || "—"}</p>
                     </td>
-                    <td className="text-right font-mono font-medium text-white">{formatCurrency(item.revenue)}</td>
-                    <td className="text-right font-mono text-amber-300">{formatCurrency(item.cogs)}</td>
-                    <td className="text-right font-mono text-purple-300">{formatCurrency(item.platformFee)}</td>
-                    <td className="text-right font-mono font-bold">
-                      <span className={item.netProfit >= 0 ? "text-emerald-400" : "text-rose-400"}>
-                        {formatCurrency(item.netProfit)}
-                      </span>
+                    <td className="text-right font-mono font-bold text-white">
+                      {formatCurrency(item.revenue)}
                     </td>
-                    <td className="text-center">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono ${
-                          item.marginPct >= 30
-                            ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800"
-                            : item.marginPct >= 15
-                            ? "bg-blue-950/60 text-blue-400 border border-blue-800"
-                            : item.marginPct > 0
-                            ? "bg-yellow-950/60 text-yellow-400 border border-yellow-800"
-                            : "bg-rose-950/60 text-rose-400 border border-rose-800"
-                        }`}
-                      >
+                    <td className="text-right font-mono text-gray-300">
+                      {formatCurrency(item.cogs)}
+                    </td>
+                    <td className="text-right font-mono text-rose-400">
+                      {item.platformFee > 0 ? `-${formatCurrency(item.platformFee)}` : "0đ"}
+                    </td>
+                    <td className={`text-right font-mono font-bold ${item.netProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                      {formatCurrency(item.netProfit)}
+                    </td>
+                    <td className="text-center font-mono">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        item.marginPct >= 30 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
+                        item.marginPct >= 15 ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" :
+                        item.marginPct > 0 ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
+                        "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                      }`}>
                         {item.marginPct}%
                       </span>
                     </td>

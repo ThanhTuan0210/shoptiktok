@@ -11,6 +11,7 @@ const defaultSettings: AppSettings = {
   shopName: "Henr.Studio",
   currency: "VND",
   tiktokFeeRate: 1.8,
+  shopeeFeeRate: 9.5,
   lowStockDefault: 10,
   shippingCostPerOrder: 25000,
 };
@@ -107,11 +108,22 @@ export default function Settings() {
     return DEFAULT_TIKTOK_BRIDGE_CONFIG;
   });
 
+  const [shopeeShopName, setShopeeShopName] = useState(localStorage.getItem("shopee_shopName") || "henr_studio_official");
+  const [shopeeFeeRate, setShopeeFeeRate] = useState(localStorage.getItem("shopee_feeRate") || "9.5");
+  const [shopeePartnerId, setShopeePartnerId] = useState(localStorage.getItem("shopee_partnerId") || "2008912");
+  const [shopeePartnerKey, setShopeePartnerKey] = useState(localStorage.getItem("shopee_partnerKey") || "shp_live_key_91823910");
+  const [shopeeCarrier, setShopeeCarrier] = useState(localStorage.getItem("shopee_carrier") || "SPX Express");
+
   const saveEnterpriseSettings = () => {
     localStorage.setItem("tt_paymentGateway", JSON.stringify(paymentConfig));
     localStorage.setItem("tt_courierConfig", JSON.stringify(courierConfig));
     localStorage.setItem("tt_supabaseConfig", JSON.stringify(supabaseConfig));
     localStorage.setItem("tt_tiktokBridge", JSON.stringify(tiktokBridge));
+    localStorage.setItem("shopee_shopName", shopeeShopName);
+    localStorage.setItem("shopee_feeRate", shopeeFeeRate);
+    localStorage.setItem("shopee_partnerId", shopeePartnerId);
+    localStorage.setItem("shopee_partnerKey", shopeePartnerKey);
+    localStorage.setItem("shopee_carrier", shopeeCarrier);
   };
 
   const [syncingSupabase, setSyncingSupabase] = useState(false);
@@ -206,6 +218,10 @@ export default function Settings() {
     const s = await db.settings.toArray();
     if (s.length > 0) {
       setSettings(s[0]);
+      if (s[0].shopeeFeeRate !== undefined) {
+        setShopeeFeeRate(String(s[0].shopeeFeeRate));
+        localStorage.setItem("shopee_feeRate", String(s[0].shopeeFeeRate));
+      }
     } else {
       const initialName = localStorage.getItem("tt_shopName") || "Henr.Studio";
       setSettings({ ...defaultSettings, shopName: initialName });
@@ -222,11 +238,15 @@ export default function Settings() {
 
   async function handleSave() {
     setSaving(true);
+    const updatedSettings: AppSettings = {
+      ...settings,
+      shopeeFeeRate: Number(shopeeFeeRate) || 9.5,
+    };
     const existing = await db.settings.toArray();
     if (existing.length > 0) {
-      await db.settings.update(existing[0].id!, settings);
+      await db.settings.update(existing[0].id!, updatedSettings);
     } else {
-      await db.settings.add(settings);
+      await db.settings.add(updatedSettings);
     }
 
     // Sync to localStorage for Storefront
@@ -235,6 +255,11 @@ export default function Settings() {
     localStorage.setItem("tt_bankName", bankName);
     localStorage.setItem("tt_bankAccount", bankAccount);
     localStorage.setItem("tt_bankOwner", bankOwner);
+    localStorage.setItem("shopee_shopName", shopeeShopName);
+    localStorage.setItem("shopee_feeRate", shopeeFeeRate);
+    localStorage.setItem("shopee_partnerId", shopeePartnerId);
+    localStorage.setItem("shopee_partnerKey", shopeePartnerKey);
+    localStorage.setItem("shopee_carrier", shopeeCarrier);
 
     setSaving(false);
     setSaved(true);
@@ -317,6 +342,21 @@ export default function Settings() {
             <label className="label">Phí TikTok Shop (%)</label>
             <input type="number" step="0.1" className="input" value={settings.tiktokFeeRate} onChange={e => setSettings(p => ({ ...p, tiktokFeeRate: Number(e.target.value) }))} />
             <p className="text-xs text-gray-500 mt-1">Phí hoa hồng nền tảng TikTok (thường từ 1.8% - 3%)</p>
+          </div>
+          <div>
+            <label className="label">Phí Shopee (%)</label>
+            <input
+              type="number"
+              step="0.1"
+              className="input"
+              value={shopeeFeeRate}
+              onChange={e => {
+                setShopeeFeeRate(e.target.value);
+                setSettings(p => ({ ...p, shopeeFeeRate: Number(e.target.value) }));
+                localStorage.setItem("shopee_feeRate", e.target.value);
+              }}
+            />
+            <p className="text-xs text-gray-500 mt-1">Phí thanh toán 5% + Phí cố định 4.5% (mặc định 9.5%)</p>
           </div>
           <div>
             <label className="label">Ngưỡng cảnh báo hết hàng (bộ)</label>
@@ -977,6 +1017,119 @@ export default function Settings() {
                 localStorage.setItem("tt_tiktokBridge", JSON.stringify(updated));
               }}
             />
+          </div>
+        </div>
+      </div>
+
+      {/* 5. TÍCH HỢP SÀN SHOPEE SELLER CENTRE & SPX EXPRESS (ĐA KÊNH OMNICHANNEL) */}
+      <div className="card space-y-4 border-[#EE4D2D]/40 bg-gradient-to-br from-gray-900 via-gray-900 to-[#EE4D2D]/10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-800">
+          <div>
+            <h2 className="text-base font-semibold text-white flex items-center gap-2">
+              <span className="text-lg">🛍️</span> Tích Hợp Sàn Shopee Seller Centre & SPX Express
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Quản lý đồng bộ đơn hàng từ Kênh Người Bán Shopee, tính chuẩn xác phí sàn ~9.5% và hỗ trợ đối soát đơn vận chuyển SPX Express.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full border bg-[#EE4D2D]/20 text-[#EE4D2D] border-[#EE4D2D]/40">
+              ✓ Đa Kênh Shopee Hoạt Động
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <div>
+            <label className="label text-xs">Tên gian hàng Shopee</label>
+            <input
+              className="input text-xs font-medium"
+              placeholder="VD: henr_studio_official"
+              value={shopeeShopName}
+              onChange={e => {
+                setShopeeShopName(e.target.value);
+                localStorage.setItem("shopee_shopName", e.target.value);
+              }}
+            />
+            <p className="text-[11px] text-gray-500 mt-1">Username Shop hiển thị trên Shopee</p>
+          </div>
+
+          <div>
+            <label className="label text-xs">Phí sàn Shopee mặc định (%)</label>
+            <input
+              type="number"
+              step="0.1"
+              className="input text-xs font-mono"
+              placeholder="9.5"
+              value={shopeeFeeRate}
+              onChange={e => {
+                setShopeeFeeRate(e.target.value);
+                localStorage.setItem("shopee_feeRate", e.target.value);
+              }}
+            />
+            <p className="text-[11px] text-gray-500 mt-1">Phí thanh toán 5% + Phí cố định 4.5% = 9.5%</p>
+          </div>
+
+          <div>
+            <label className="label text-xs">Đơn vị vận chuyển Shopee</label>
+            <select
+              className="input text-xs"
+              value={shopeeCarrier}
+              onChange={e => {
+                setShopeeCarrier(e.target.value);
+                localStorage.setItem("shopee_carrier", e.target.value);
+              }}
+            >
+              <option value="SPX Express">SPX Express (Shopee Xpress)</option>
+              <option value="Giao Hàng Nhanh">Giao Hàng Nhanh (GHN)</option>
+              <option value="J&T Express">J&T Express</option>
+              <option value="Viettel Post">Viettel Post</option>
+            </select>
+            <p className="text-[11px] text-gray-500 mt-1">Mặc định cho các đơn hàng xuất từ Shopee</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div>
+            <label className="label text-xs">Shopee Open Platform Partner ID</label>
+            <input
+              className="input text-xs font-mono"
+              placeholder="VD: 2008912"
+              value={shopeePartnerId}
+              onChange={e => {
+                setShopeePartnerId(e.target.value);
+                localStorage.setItem("shopee_partnerId", e.target.value);
+              }}
+            />
+          </div>
+          <div>
+            <label className="label text-xs flex items-center justify-between">
+              <span>Shopee API Partner Key</span>
+              <a href="https://open.shopee.com" target="_blank" rel="noreferrer" className="text-[#EE4D2D] hover:underline inline-flex items-center gap-1 text-[11px]">
+                Open Platform <ExternalLink size={10} />
+              </a>
+            </label>
+            <input
+              type="password"
+              className="input text-xs font-mono"
+              placeholder="shp_live_key_..."
+              value={shopeePartnerKey}
+              onChange={e => {
+                setShopeePartnerKey(e.target.value);
+                localStorage.setItem("shopee_partnerKey", e.target.value);
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Sync Guidance Callout */}
+        <div className="p-3 bg-gray-800/60 rounded-xl border border-gray-700/60 text-xs text-gray-300 flex items-start gap-2.5">
+          <span className="text-base shrink-0">💡</span>
+          <div>
+            <p className="font-semibold text-white">Cách đồng bộ đơn hàng từ Shopee sang hệ thống:</p>
+            <p className="text-gray-400 mt-0.5 leading-relaxed">
+              Vào <strong>Kênh Người Bán Shopee (banhang.shopee.vn) &gt; Quản lý đơn hàng &gt; Xuất danh sách (.xlsx)</strong>. Sau đó vào trang <strong>Quản lý Đơn hàng</strong> bấm nút <strong>Import Excel (Shopee / TikTok)</strong>. Hệ thống sẽ tự động nhận diện mã đơn Shopee, người nhận, SPX Express và tính chuẩn xác phí sàn 9.5%!
+            </p>
           </div>
         </div>
       </div>

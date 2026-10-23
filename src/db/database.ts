@@ -23,12 +23,16 @@ export class TikTokShopDB extends Dexie {
       productVariants: "id, productId, sku, color, size, createdAt",
       stockMovements: "id, variantId, productId, type, date, referenceId, createdAt",
       suppliers: "id, name, createdAt",
-      orders: "id, tiktokOrderId, status, orderDate, customerName, liveSessionId, createdAt",
+      orders: "id, tiktokOrderId, shopeeOrderId, status, orderDate, customerName, liveSessionId, shopeeFeeRate, shopeeFeeAmount, shopeeCarrier, channel, createdAt",
       returns: "id, orderId, status, returnDate, createdAt",
       defectiveItems: "id, productId, variantId, type, date, returnId, createdAt",
       expenses: "id, category, date, createdAt",
       settings: "++id",
       liveSessions: "id, title, status, scheduledStartTime, createdAt",
+    });
+    
+    this.version(3).stores({
+      orders: "id, tiktokOrderId, shopeeOrderId, status, orderDate, customerName, liveSessionId, shopeeFeeRate, shopeeFeeAmount, shopeeCarrier, channel, createdAt, [channel+status]",
     });
   }
 }

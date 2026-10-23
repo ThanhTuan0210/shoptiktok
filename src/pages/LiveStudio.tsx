@@ -55,8 +55,14 @@ export default function LiveStudio() {
   const [selectedReportSessionId, setSelectedReportSessionId] = useState<string>("");
 
   // TikTok Live Connector State
+  const [livePlatform, setLivePlatform] = useState<"tiktok" | "shopee">(() => {
+    return (localStorage.getItem("live_platform") as "tiktok" | "shopee") || "tiktok";
+  });
   const [tiktokChannel, setTiktokChannel] = useState<string>(() => {
     return localStorage.getItem("tt_live_channel") || "@henr.studio";
+  });
+  const [shopeeLiveChannel, setShopeeLiveChannel] = useState<string>(() => {
+    return localStorage.getItem("shopee_shopName") || "henr_studio_official";
   });
   const [viewerCount, setViewerCount] = useState(1428);
   const [likeCount, setLikeCount] = useState(28500);
@@ -257,13 +263,18 @@ export default function LiveStudio() {
     }
 
     setIsSubmittingOrder(true);
-    const orderId = `LIVE-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+    const isShopeeLive = livePlatform === "shopee";
+    const orderId = isShopeeLive
+      ? `SHP-LIVE-${Date.now().toString(36).toUpperCase().slice(-6)}`
+      : `LIVE-${Date.now().toString(36).toUpperCase().slice(-6)}`;
     const unitPrice = currentPinnedItem.livePrice;
     const total = unitPrice * fastOrder.quantity;
 
     const newOrder: Order = {
       id: generateId(),
       tiktokOrderId: orderId,
+      shopeeOrderId: isShopeeLive ? orderId : undefined,
+      channel: isShopeeLive ? "shopee" : "tiktok",
       customerName: fastOrder.customerName,
       customerPhone: fastOrder.customerPhone,
       customerAddress: fastOrder.customerAddress || "Chờ bổ sung địa chỉ từ Live chat",
@@ -273,9 +284,16 @@ export default function LiveStudio() {
       sellerDiscount: 0,
       shippingFee: 0,
       total,
-      shippingCarrier: "GHTK",
+      tiktokFeeRate: isShopeeLive ? 0 : 1.8,
+      tiktokFeeAmount: isShopeeLive ? 0 : Math.round(total * 0.018),
+      shopeeFeeRate: isShopeeLive ? 9.5 : 0,
+      shopeeFeeAmount: isShopeeLive ? Math.round(total * 0.095) : 0,
+      shippingCarrier: isShopeeLive ? "SPX Express" : "GHTK",
+      shopeeCarrier: isShopeeLive ? "SPX Express" : undefined,
       trackingNumber: "",
-      note: `🔴 Đơn chốt trong TikTok Live: "${activeSession.title}" | Ghim #${currentPinnedItem.pinNumber}`,
+      note: isShopeeLive
+        ? `🛍️ Đơn chốt trong Shopee Live: "${activeSession.title}" | Ghim #${currentPinnedItem.pinNumber}`
+        : `🔴 Đơn chốt trong TikTok Live: "${activeSession.title}" | Ghim #${currentPinnedItem.pinNumber}`,
       paymentMethod: "cod",
       liveSessionId: activeSession.id,
       createdAt: now(),
@@ -549,20 +567,46 @@ export default function LiveStudio() {
                 </div>
               </div>
 
-              {/* TikTok Live Connector Command Bar */}
-              <div className="bg-gray-900 border border-rose-900/40 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+              {/* Multi-Channel Live Stream Connector Command Bar */}
+              <div className={`bg-gray-900 border rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-lg transition-all ${
+                livePlatform === "shopee" ? "border-[#EE4D2D]/40 bg-gradient-to-r from-gray-900 via-gray-900 to-[#EE4D2D]/10" : "border-rose-900/40"
+              }`}>
                 <div className="flex items-center gap-3 flex-wrap">
+                  {/* Channel Switcher */}
+                  <div className="flex bg-gray-800 p-0.5 rounded-xl border border-gray-700">
+                    <button
+                      type="button"
+                      onClick={() => { setLivePlatform("tiktok"); localStorage.setItem("live_platform", "tiktok"); }}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        livePlatform === "tiktok" ? "bg-rose-600 text-white shadow-sm" : "text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      <span>🎵 TikTok Live</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setLivePlatform("shopee"); localStorage.setItem("live_platform", "shopee"); }}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        livePlatform === "shopee" ? "bg-[#EE4D2D] text-white shadow-sm" : "text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      <span>🛍️ Shopee Live</span>
+                    </button>
+                  </div>
+
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
                     <span className="text-xs font-black tracking-wider uppercase text-emerald-400">
-                      TikTok Live Stream:
+                      {livePlatform === "shopee" ? "Shopee Live:" : "TikTok Live:"}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 bg-gray-800/80 px-2.5 py-1 rounded-lg border border-gray-700">
-                    <span className="text-xs font-bold text-white">{tiktokChannel}</span>
+                    <span className="text-xs font-bold text-white">{livePlatform === "shopee" ? shopeeLiveChannel : tiktokChannel}</span>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-gray-300">
-                    <span className="flex items-center gap-1 text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20">
+                    <span className={`flex items-center gap-1 font-bold px-2 py-0.5 rounded-md border ${
+                      livePlatform === "shopee" ? "text-orange-400 bg-orange-500/10 border-orange-500/20" : "text-rose-400 bg-rose-500/10 border-rose-500/20"
+                    }`}>
                       <Users size={13} /> {viewerCount.toLocaleString()} mắt xem
                     </span>
                     <span className="flex items-center gap-1 text-pink-400 font-bold bg-pink-500/10 px-2 py-0.5 rounded-md border border-pink-500/20">
@@ -572,17 +616,29 @@ export default function LiveStudio() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <a
-                    href={`https://www.tiktok.com/${tiktokChannel}/live`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn bg-[#fe2c55] hover:bg-[#e62045] text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 shadow-md shadow-rose-950/40 transition-transform active:scale-95"
-                    title="Mở xem phòng live trực tiếp trên TikTok"
-                  >
-                    <ExternalLink size={13} /> Mở TikTok Live
-                  </a>
+                  {livePlatform === "shopee" ? (
+                    <a
+                      href="https://live.shopee.vn"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn bg-[#EE4D2D] hover:bg-[#d84022] text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 shadow-md shadow-orange-950/40 transition-transform active:scale-95"
+                      title="Mở xem phòng live trực tiếp trên Shopee"
+                    >
+                      <ExternalLink size={13} /> Mở Shopee Live
+                    </a>
+                  ) : (
+                    <a
+                      href={`https://www.tiktok.com/${tiktokChannel}/live`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn bg-[#fe2c55] hover:bg-[#e62045] text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 shadow-md shadow-rose-950/40 transition-transform active:scale-95"
+                      title="Mở xem phòng live trực tiếp trên TikTok"
+                    >
+                      <ExternalLink size={13} /> Mở TikTok Live
+                    </a>
+                  )}
                   <span className="text-[11px] text-gray-400 bg-gray-800 px-2.5 py-1.5 rounded-lg border border-gray-700 hidden sm:inline-block">
-                    ✓ Đã liên kết TikTok Shop Bridge
+                    {livePlatform === "shopee" ? "✓ Đã liên kết Shopee Seller Centre" : "✓ Đã liên kết TikTok Shop Bridge"}
                   </span>
                 </div>
               </div>

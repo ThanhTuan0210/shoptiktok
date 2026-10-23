@@ -1,11 +1,12 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import debounce from "lodash.debounce";
 import { useSearchParams } from "react-router-dom";
 import { db } from "../db/database";
 import type { Order, OrderStatus, Return, Product, ProductVariant, CourierConfig } from "../types";
 import { DEFAULT_COURIER_CONFIG } from "../types";
 import {
   Plus, Download, Upload, X,
-  Eye, Edit2, Trash2, Package, Printer, Truck, Phone, MessageSquare, MessageSquareText, Scan, CheckCircle2, RotateCcw, XCircle, ShieldAlert, Cloud, RefreshCw
+  Eye, Edit2, Trash2, Package, Printer, Truck, Phone, MessageSquare, MessageSquareText, Scan, CheckCircle2, RotateCcw, XCircle, ShieldAlert, Cloud
 } from "lucide-react";
 import Modal from "../components/ui/Modal";
 import SearchInput from "../components/ui/SearchInput";
@@ -14,14 +15,15 @@ import PrintShippingModal from "../components/ui/PrintShippingModal";
 import QuickMessageModal from "../components/ui/QuickMessageModal";
 import BarcodeScannerModal from "../components/ui/BarcodeScannerModal";
 import PartialExchangeModal from "../components/orders/PartialExchangeModal";
+import OrderModal from "../components/orders/OrderModal";
 import { dispatchOrderToCourier } from "../services/courierGateway";
 import { performFullTwoWaySync } from "../services/supabaseSync";
-import type { CourierConfig } from "../types";
 import {
   formatCurrency, formatDate, generateId, now, today,
-  getOrderStatusLabel, getReturnReasonLabel, formatNumber, truncate
+  getOrderStatusLabel, getReturnReasonLabel, formatNumber, truncate,
+  getChannelBadge
 } from "../utils/helpers";
-import { exportOrdersToExcel, importOrdersFromExcel } from "../utils/exportData";
+import { exportOrdersToExcel, importOrdersFromExcel, exportShopeeTemplate } from "../utils/exportData";
 import { subscribeToNewOrders } from "../utils/orderSyncEvents";
 
 
@@ -96,6 +98,7 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(initialFilter);
+  const [channelFilter, setChannelFilter] = useState<"all" | "shopee" | "tiktok" | "website">("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -113,7 +116,9 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
   const [courierConfig] = useState<CourierConfig>(() => {
     try {
       const saved = localStorage.getItem("tt_courierConfig");
+      if (saved) return JSON.parse(saved);
     } catch {}
+    return DEFAULT_COURIER_CONFIG;
   });
 
   const handleDispatchGHN = async (orderToDispatch: Order) => {
@@ -137,7 +142,7 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
   };
   const [syncingCloud, setSyncingCloud] = useState(false);
 
-  const handleSyncCloud = async () => {
+  const performSync = useCallback(async () => {
     setSyncingCloud(true);
     try {
       const res = await performFullTwoWaySync();
@@ -148,7 +153,12 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
     } finally {
       setSyncingCloud(false);
     }
-  };
+  }, []);
+
+  const debouncedSyncCloud = useMemo(
+    () => debounce(performSync, 400, { leading: true, trailing: false }),
+    [performSync]
+  );
 
   const [page, setPage] = useState(1);
   const PER_PAGE = 20;
@@ -213,9 +223,19 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
       const matchSearch = !search
         || o.customerName.toLowerCase().includes(q)
         || (o.tiktokOrderId || "").toLowerCase().includes(q)
+        || (o.shopeeOrderId || "").toLowerCase().includes(q)
         || (o.customerPhone || "").includes(search)
         || (o.trackingNumber || "").toLowerCase().includes(q);
       
+      let matchChannel = true;
+      if (channelFilter === "shopee") {
+        matchChannel = o.channel === "shopee" || Boolean(o.shopeeOrderId) || (o.note || "").toLowerCase().includes("shopee");
+      } else if (channelFilter === "website") {
+        matchChannel = o.channel === "website" || (o.tiktokOrderId || "").startsWith("WEB-");
+      } else if (channelFilter === "tiktok") {
+        matchChannel = (o.channel === "tiktok" || !o.channel) && !(o.shopeeOrderId || (o.note || "").toLowerCase().includes("shopee")) && !(o.tiktokOrderId || "").startsWith("WEB-");
+      }
+
       let matchStatus = true;
       if (statusFilter === "all") {
         matchStatus = true;
@@ -227,23 +247,63 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
 
       const matchFrom = !dateFrom || o.orderDate >= dateFrom;
       const matchTo = !dateTo || o.orderDate <= dateTo;
-      return matchSearch && matchStatus && matchFrom && matchTo;
+      return matchSearch && matchChannel && matchStatus && matchFrom && matchTo;
     });
-  }, [orders, search, statusFilter, dateFrom, dateTo]);
+  }, [orders, search, channelFilter, statusFilter, dateFrom, dateTo]);
 
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
 
-  // Status counts for badge tabs
-  const countAll = orders.length;
-  const countPending = orders.filter(o => o.status === "pending").length;
-  const countProcessing = orders.filter(o => o.status === "processing").length;
-  const countShipping = orders.filter(o => o.status === "shipping").length;
-  const countDelivered = orders.filter(o => o.status === "delivered").length;
-  const countReturns = orders.filter(o => o.status === "returned" || o.status === "return_requested").length;
-  const countCancelled = orders.filter(o => o.status === "cancelled").length;
+  // High-performance single-pass status and channel counts
+  const counts = useMemo(() => {
+    let pending = 0, processing = 0, shipping = 0, delivered = 0, returns = 0, cancelled = 0;
+    let shopee = 0, tiktok = 0, website = 0;
+    for (let i = 0; i < orders.length; i++) {
+      const o = orders[i];
+      const s = o.status;
+      if (s === "pending") pending++;
+      else if (s === "processing") processing++;
+      else if (s === "shipping") shipping++;
+      else if (s === "delivered") delivered++;
+      else if (s === "cancelled") cancelled++;
+      
+      if (s === "returned" || s === "return_requested") returns++;
 
-  const totalRevenue = filtered.filter(o => o.status !== "cancelled").reduce((s, o) => s + o.total, 0);
+      if (o.channel === "shopee" || Boolean(o.shopeeOrderId) || (o.note || "").toLowerCase().includes("shopee")) {
+        shopee++;
+      } else if (o.channel === "website" || (o.tiktokOrderId || "").startsWith("WEB-")) {
+        website++;
+      } else {
+        tiktok++;
+      }
+    }
+    return {
+      all: orders.length,
+      pending,
+      processing,
+      shipping,
+      delivered,
+      returns,
+      cancelled,
+      shopee,
+      tiktok,
+      website,
+    };
+  }, [orders]);
+
+  const countAll = counts.all;
+  const countPending = counts.pending;
+  const countProcessing = counts.processing;
+  const countShipping = counts.shipping;
+  const countDelivered = counts.delivered;
+  const countReturns = counts.returns;
+  const countCancelled = counts.cancelled;
+
+  const countShopee = counts.shopee;
+  const countTikTok = counts.tiktok;
+  const countWebsite = counts.website;
+
+  const totalRevenue = useMemo(() => filtered.filter(o => o.status !== "cancelled").reduce((s, o) => s + o.total, 0), [filtered]);
 
   async function handleSave() {
     if (!editOrder.customerName) return;
@@ -324,6 +384,8 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
           id: generateId(),
           orderId: order.id,
           tiktokOrderId: order.tiktokOrderId,
+          shopeeOrderId: order.shopeeOrderId,
+          channel: order.channel,
           customerName: order.customerName,
           items: order.items,
           reason: selectedReason as any,
@@ -376,7 +438,7 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
             variantId: item.variantId,
             type: "adjustment",
             quantity: item.quantity,
-            note: `Hoàn kho do huỷ đơn ${targetOrder.tiktokOrderId || targetOrder.id.slice(-8)}`,
+            note: `Hoàn kho do huỷ đơn ${targetOrder.shopeeOrderId || targetOrder.tiktokOrderId || targetOrder.id.slice(-8)}`,
             date: today(),
             createdAt: now(),
           });
@@ -414,12 +476,19 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
     if (!file) return;
     try {
       const imported = await importOrdersFromExcel(file);
+      const ordersToAdd: Order[] = [];
+      const timestamp = now();
+      const todayStr = today();
+
       for (const o of imported) {
-        if (o.tiktokOrderId) {
-          await db.orders.add({
+        if (o.tiktokOrderId || o.shopeeOrderId) {
+          const isShopee = o.channel === "shopee" || Boolean(o.shopeeOrderId);
+          ordersToAdd.push({
             id: generateId(),
-            tiktokOrderId: o.tiktokOrderId,
-            orderDate: o.orderDate || today(),
+            tiktokOrderId: o.tiktokOrderId || (o.shopeeOrderId ? o.shopeeOrderId : `WEB-${generateId().slice(-8).toUpperCase()}`),
+            shopeeOrderId: o.shopeeOrderId,
+            channel: o.channel || (isShopee ? "shopee" : "tiktok"),
+            orderDate: o.orderDate || todayStr,
             customerName: o.customerName || "Khách mua hàng",
             customerPhone: o.customerPhone || "",
             customerAddress: o.customerAddress || "",
@@ -430,20 +499,29 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
             total: o.total || 0,
             tiktokFeeRate: o.tiktokFeeRate ?? 1.8,
             tiktokFeeAmount: o.tiktokFeeAmount || 0,
+            shopeeFeeRate: o.shopeeFeeRate ?? 9.5,
+            shopeeFeeAmount: o.shopeeFeeAmount || 0,
             status: o.status || "pending",
-            shippingCarrier: o.shippingCarrier || "GHTK",
+            shippingCarrier: o.shippingCarrier || (isShopee ? "SPX Express" : "GHTK"),
+            shopeeCarrier: o.shopeeCarrier,
             trackingNumber: o.trackingNumber || "",
             items: o.items || [],
             note: o.note || "",
-            createdAt: now(),
-            updatedAt: now(),
+            createdAt: timestamp,
+            updatedAt: timestamp,
           });
         }
       }
-      alert(`Đã import thành công ${imported.length} đơn hàng!`);
+
+      if (ordersToAdd.length > 0) {
+        await db.orders.bulkAdd(ordersToAdd);
+      }
+      alert(`Đã import thành công ${ordersToAdd.length} đơn hàng siêu tốc!`);
       loadOrders();
     } catch {
       alert("Lỗi khi đọc file Excel. Vui lòng kiểm tra định dạng!");
+    } finally {
+      e.target.value = "";
     }
   }
 
@@ -469,7 +547,7 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
         <div className="flex gap-2 flex-wrap">
           <button
             type="button"
-            onClick={handleSyncCloud}
+            onClick={debouncedSyncCloud}
             disabled={syncingCloud}
             className="btn-secondary text-xs flex items-center gap-1.5 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/10 transition-colors"
             title="Đồng bộ 2 chiều với cơ sở dữ liệu đám mây Supabase PostgreSQL"
@@ -477,9 +555,18 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
             <Cloud size={15} className={syncingCloud ? "animate-spin text-indigo-400" : "text-indigo-400"} />
             <span>{syncingCloud ? "Đang đồng bộ..." : "Đồng bộ Đám mây"}</span>
           </button>
-          <label className="btn-secondary cursor-pointer text-xs">
-            <Upload size={15} />
-            Import Excel
+          <button
+            type="button"
+            onClick={() => exportShopeeTemplate()}
+            className="btn-secondary text-xs flex items-center gap-1.5 text-orange-400 border-orange-500/30 hover:bg-orange-500/10 transition-colors"
+            title="Tải file mẫu Excel đơn hàng chuẩn Shopee Seller Centre"
+          >
+            <Download size={14} className="text-[#EE4D2D]" />
+            <span>Mẫu Shopee</span>
+          </button>
+          <label className="btn-secondary cursor-pointer text-xs flex items-center gap-1.5">
+            <Upload size={14} />
+            <span>Import Excel (Shopee / TikTok)</span>
             <input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} />
           </label>
           <button onClick={() => exportOrdersToExcel(filtered)} className="btn-secondary text-xs">
@@ -498,6 +585,71 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
             <Plus size={15} /> Thêm đơn thủ công
           </button>
         </div>
+      </div>
+
+      {/* OMNICHANNEL CHANNEL TABS: TẤT CẢ / SHOPEE / TIKTOK / WEBSITE */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-semibold">
+        <button
+          onClick={() => { setChannelFilter("all"); setPage(1); }}
+          className={`px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 ${
+            channelFilter === "all"
+              ? "bg-gray-800 text-white border-gray-600 shadow-sm"
+              : "bg-gray-900/60 text-gray-400 border-gray-800 hover:text-white"
+          }`}
+        >
+          <span>🌐 Tất cả sàn</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-gray-800 text-gray-300">
+            {countAll}
+          </span>
+        </button>
+
+        <button
+          onClick={() => { setChannelFilter("shopee"); setPage(1); }}
+          className={`px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 ${
+            channelFilter === "shopee"
+              ? "bg-[#EE4D2D] text-white border-[#EE4D2D] shadow-sm shadow-[#EE4D2D]/30"
+              : "bg-gray-900/60 text-[#EE4D2D] border-[#EE4D2D]/40 hover:bg-[#EE4D2D]/10"
+          }`}
+        >
+          <span>🛍️ Shopee</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+            channelFilter === "shopee" ? "bg-white/20 text-white" : "bg-[#EE4D2D]/20 text-[#EE4D2D]"
+          }`}>
+            {countShopee}
+          </span>
+        </button>
+
+        <button
+          onClick={() => { setChannelFilter("tiktok"); setPage(1); }}
+          className={`px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 ${
+            channelFilter === "tiktok"
+              ? "bg-rose-600 text-white border-rose-500 shadow-sm"
+              : "bg-gray-900/60 text-rose-400 border-rose-500/30 hover:bg-rose-500/10"
+          }`}
+        >
+          <span>🎵 TikTok Shop</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+            channelFilter === "tiktok" ? "bg-white/20 text-white" : "bg-rose-500/20 text-rose-300"
+          }`}>
+            {countTikTok}
+          </span>
+        </button>
+
+        <button
+          onClick={() => { setChannelFilter("website"); setPage(1); }}
+          className={`px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 ${
+            channelFilter === "website"
+              ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+              : "bg-gray-900/60 text-blue-400 border-blue-500/30 hover:bg-blue-500/10"
+          }`}
+        >
+          <span>🛒 Website Store</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+            channelFilter === "website" ? "bg-white/20 text-white" : "bg-blue-500/20 text-blue-300"
+          }`}>
+            {countWebsite}
+          </span>
+        </button>
       </div>
 
       {/* 1-CLICK STATUS TABS WITH LIVE COUNTER BADGES */}
@@ -728,8 +880,13 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                       className="rounded border-gray-700 bg-gray-800 text-[#fe2c55] focus:ring-[#fe2c55] cursor-pointer"
                     />
                   </td>
-                  <td className="font-mono text-xs font-semibold text-gray-300">
-                    {o.tiktokOrderId || truncate(o.id, 14)}
+                  <td>
+                    <div className="flex flex-col gap-1 items-start">
+                      {getChannelBadge(o.channel, o)}
+                      <span className="font-mono text-xs font-semibold text-gray-300">
+                        {o.shopeeOrderId || o.tiktokOrderId || truncate(o.id, 14)}
+                      </span>
+                    </div>
                   </td>
                   <td className="whitespace-nowrap text-xs">{formatDate(o.orderDate)}</td>
                   <td>
@@ -765,18 +922,30 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                             Zalo
                           </a>
                         )}
-                        <a
-                          href={`https://seller-vn.tiktok.com/chat${o.tiktokOrderId ? `?order_id=${o.tiktokOrderId}` : ""}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[10px] text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 flex items-center gap-1 transition-colors"
-                          title="Mở chat TikTok Shop với khách"
-                        >
-                          <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
-                            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
-                          </svg>
-                          <span>TikTok</span>
-                        </a>
+                        {o.channel === "shopee" || o.shopeeOrderId ? (
+                          <a
+                            href="https://banhang.shopee.vn/webchat/conversations"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] text-orange-400 hover:text-orange-300 hover:bg-orange-500/20 px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20 flex items-center gap-1 transition-colors"
+                            title="Mở Shopee Chat Web"
+                          >
+                            <span>🛍️ Shopee</span>
+                          </a>
+                        ) : (
+                          <a
+                            href={`https://seller-vn.tiktok.com/chat${o.tiktokOrderId ? `?order_id=${o.tiktokOrderId}` : ""}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 flex items-center gap-1 transition-colors"
+                            title="Mở chat TikTok Shop với khách"
+                          >
+                            <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
+                              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
+                            </svg>
+                            <span>TikTok</span>
+                          </a>
+                        )}
                         <button
                           type="button"
                           onClick={() => setQuickMsgOrder(o)}
@@ -798,6 +967,19 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                   </td>
                   <td className="text-right whitespace-nowrap">
                     <p className="font-bold text-white">{formatCurrency(o.total)}</p>
+                    {(() => {
+                      const isShopee = o.channel === "shopee" || Boolean(o.shopeeOrderId);
+                      const feeRate = isShopee ? (o.shopeeFeeRate ?? 9.5) : (o.tiktokFeeRate ?? 1.8);
+                      const feeAmount = isShopee
+                        ? (o.shopeeFeeAmount ?? Math.round(o.total * (feeRate / 100)))
+                        : (o.tiktokFeeAmount ?? Math.round(o.total * (feeRate / 100)));
+                      const net = Math.max(0, o.total - feeAmount);
+                      return (
+                        <p className="text-[10px] text-gray-400 font-mono" title={`Phí sàn: -${formatCurrency(feeAmount)} (${feeRate}%) • Thực nhận: ${formatCurrency(net)}`}>
+                          Ví: <span className="text-emerald-400 font-semibold">{formatCurrency(net)}</span>
+                        </p>
+                      );
+                    })()}
                     {o.status === "delivered" ? (
                       <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
                         ✓ COD Đã thu
@@ -869,8 +1051,24 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                     })()}
                   </td>
                   <td>
-                    <p className="text-xs text-gray-300 font-medium">{o.shippingCarrier || "—"}</p>
-                    <p className="text-[11px] text-gray-500 font-mono">{o.trackingNumber ? truncate(o.trackingNumber, 14) : ""}</p>
+                    <p className="text-xs text-gray-300 font-medium">
+                      {o.shopeeCarrier || o.shippingCarrier || (o.channel === "shopee" ? "SPX Express" : "—")}
+                    </p>
+                    {o.trackingNumber ? (
+                      (o.shopeeCarrier || o.shippingCarrier || "").toLowerCase().includes("spx") || o.channel === "shopee" ? (
+                        <a
+                          href={`https://spx.vn/track?${o.trackingNumber}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] text-cyan-400 hover:text-cyan-300 hover:underline font-mono inline-flex items-center gap-0.5"
+                          title="Tra cứu lộ trình đơn trên SPX Express"
+                        >
+                          {truncate(o.trackingNumber, 14)}
+                        </a>
+                      ) : (
+                        <p className="text-[11px] text-gray-500 font-mono">{truncate(o.trackingNumber, 14)}</p>
+                      )
+                    ) : null}
                   </td>
                   <td>
                     <div className="flex items-center justify-center gap-1">
@@ -883,7 +1081,7 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                           <CheckCircle2 size={12} /> Duyệt
                         </button>
                       )}
-                      {!o.carrierTrackingCode && o.status !== "cancelled" && (
+                      {!o.carrierTrackingCode && o.status !== "cancelled" && o.channel !== "shopee" && !o.shopeeOrderId && (
                         <button
                           onClick={() => handleDispatchGHN(o)}
                           className="p-1.5 text-gray-400 hover:text-amber-400 hover:bg-amber-900/20 rounded-lg transition-colors"
@@ -960,109 +1158,31 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
       )}
 
       {/* Create / Edit Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)}
-        title={isEditing ? "Chỉnh sửa đơn hàng" : "Thêm đơn hàng thủ công"} size="lg">
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="label">Mã đơn TikTok</label>
-              <input type="text" className="input font-mono" value={editOrder.tiktokOrderId || ""}
-                onChange={e => setEditOrder(p => ({ ...p, tiktokOrderId: e.target.value }))}
-                placeholder="578912345678901234" />
-            </div>
-            <div>
-              <label className="label">Ngày đặt hàng</label>
-              <input type="date" className="input" value={editOrder.orderDate || today()}
-                onChange={e => setEditOrder(p => ({ ...p, orderDate: e.target.value }))} />
-            </div>
-            <div>
-              <label className="label">Tên khách hàng *</label>
-              <input type="text" className="input" value={editOrder.customerName || ""}
-                onChange={e => setEditOrder(p => ({ ...p, customerName: e.target.value }))}
-                placeholder="Nguyễn Văn A" required />
-            </div>
-            <div>
-              <label className="label">Số điện thoại</label>
-              <input type="text" className="input font-mono" value={editOrder.customerPhone || ""}
-                onChange={e => setEditOrder(p => ({ ...p, customerPhone: e.target.value }))}
-                placeholder="0912345678" />
-            </div>
-          </div>
-          <div>
-            <label className="label">Địa chỉ giao hàng</label>
-            <textarea rows={2} className="input" value={editOrder.customerAddress || ""}
-              onChange={e => setEditOrder(p => ({ ...p, customerAddress: e.target.value }))}
-              placeholder="123 Đường ABC, Phường X, Quận Y, TP..." />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div>
-              <label className="label">Tiền hàng (VNĐ)</label>
-              <input type="number" className="input" value={editOrder.subtotal || ""}
-                onChange={e => setEditOrder(p => ({ ...p, subtotal: Number(e.target.value) }))} />
-            </div>
-            <div>
-              <label className="label">Phí ship (VNĐ)</label>
-              <input type="number" className="input" value={editOrder.shippingFee || ""}
-                onChange={e => setEditOrder(p => ({ ...p, shippingFee: Number(e.target.value) }))} />
-            </div>
-            <div>
-              <label className="label">TikTok Voucher</label>
-              <input type="number" className="input" value={editOrder.tiktokDiscount || ""}
-                onChange={e => setEditOrder(p => ({ ...p, tiktokDiscount: Number(e.target.value) }))} />
-            </div>
-            <div>
-              <label className="label">Shop Voucher</label>
-              <input type="number" className="input" value={editOrder.sellerDiscount || ""}
-                onChange={e => setEditOrder(p => ({ ...p, sellerDiscount: Number(e.target.value) }))} />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="label">Trạng thái</label>
-              <select className="input" value={editOrder.status || "pending"}
-                onChange={e => setEditOrder(p => ({ ...p, status: e.target.value as OrderStatus }))}>
-                {STATUSES.map(s => <option key={s} value={s}>{getOrderStatusLabel(s)}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">Đơn vị vận chuyển</label>
-              <select className="input" value={editOrder.shippingCarrier || "GHTK"}
-                onChange={e => setEditOrder(p => ({ ...p, shippingCarrier: e.target.value }))}>
-                {["GHTK", "GHN", "J&T Express", "Viettel Post", "Shopee Xpress", "SPX Express"].map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="label">Mã vận đơn</label>
-              <input type="text" className="input font-mono" value={editOrder.trackingNumber || ""}
-                onChange={e => setEditOrder(p => ({ ...p, trackingNumber: e.target.value }))}
-                placeholder="GHTK123456789" />
-            </div>
-          </div>
-          <div>
-            <label className="label">Ghi chú đơn hàng</label>
-            <input type="text" className="input" value={editOrder.note || ""}
-              onChange={e => setEditOrder(p => ({ ...p, note: e.target.value }))}
-              placeholder="Khách dặn giao buổi tối, kiểm tra hàng..." />
-          </div>
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-800">
-            <button onClick={() => setShowModal(false)} className="btn-secondary">Hủy</button>
-            <button onClick={handleSave} disabled={saving} className="btn-primary">
-              {saving ? "Đang lưu..." : isEditing ? "Cập nhật" : "Tạo đơn hàng"}
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <OrderModal
+        isOpen={showModal}
+        isEditing={isEditing}
+        saving={saving}
+        editOrder={editOrder}
+        setEditOrder={setEditOrder}
+        onClose={() => {
+          setShowModal(false);
+          setEditOrder(emptyOrder);
+          setIsEditing(false);
+        }}
+        onSave={handleSave}
+      />
 
       {/* Order Detail Modal */}
       {showDetail && (
         <Modal isOpen={true} onClose={() => setShowDetail(null)}
-          title={`Chi tiết đơn hàng #${showDetail.tiktokOrderId || showDetail.id}`} size="lg">
+          title={`Chi tiết đơn hàng #${showDetail.shopeeOrderId || showDetail.tiktokOrderId || showDetail.id}`} size="lg">
           <div className="space-y-4 text-sm">
             <div className="bg-gray-800/60 rounded-xl p-4 border border-gray-700 grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
-                <p className="text-xs text-gray-400">Khách hàng</p>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <p className="text-xs text-gray-400">Khách hàng</p>
+                  {getChannelBadge(showDetail.channel, showDetail)}
+                </div>
                 <p className="font-semibold text-white mt-0.5">{showDetail.customerName}</p>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <span className="text-xs text-gray-400 font-mono">{showDetail.customerPhone}</span>
@@ -1071,18 +1191,30 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                       <Phone size={12} />
                     </a>
                   )}
-                  <a
-                    href={`https://seller-vn.tiktok.com/chat${showDetail.tiktokOrderId ? `?order_id=${showDetail.tiktokOrderId}` : ""}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[10px] text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 flex items-center gap-1 transition-colors"
-                    title="Mở chat TikTok Shop với khách"
-                  >
-                    <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
-                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
-                    </svg>
-                    <span>TikTok</span>
-                  </a>
+                  {showDetail.channel === "shopee" || showDetail.shopeeOrderId ? (
+                    <a
+                      href="https://banhang.shopee.vn/webchat/conversations"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] text-orange-400 hover:text-orange-300 hover:bg-orange-500/20 px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20 flex items-center gap-1 transition-colors"
+                      title="Mở chat Shopee với khách"
+                    >
+                      <span>🛍️ Shopee Chat</span>
+                    </a>
+                  ) : (
+                    <a
+                      href={`https://seller-vn.tiktok.com/chat${showDetail.tiktokOrderId ? `?order_id=${showDetail.tiktokOrderId}` : ""}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 flex items-center gap-1 transition-colors"
+                      title="Mở chat TikTok Shop với khách"
+                    >
+                      <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
+                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
+                      </svg>
+                      <span>TikTok</span>
+                    </a>
+                  )}
                 </div>
               </div>
               <div>
@@ -1091,7 +1223,7 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
               </div>
               <div>
                 <p className="text-xs text-gray-400">Đơn vị vận chuyển</p>
-                <p className="font-semibold text-white mt-0.5">{showDetail.shippingCarrier || "GHTK"}</p>
+                <p className="font-semibold text-white mt-0.5">{showDetail.shopeeCarrier || showDetail.shippingCarrier || (showDetail.channel === "shopee" ? "SPX Express" : "GHTK")}</p>
                 <p className="text-xs text-gray-400 font-mono">{showDetail.trackingNumber || "Chưa có mã"}</p>
               </div>
               <div>
@@ -1170,6 +1302,43 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
               </div>
             </div>
 
+            {/* Chi tiết tài chính & Phí sàn thực tế */}
+            {(() => {
+              const isShopee = showDetail.channel === "shopee" || Boolean(showDetail.shopeeOrderId);
+              const feeRate = isShopee ? (showDetail.shopeeFeeRate ?? 9.5) : (showDetail.tiktokFeeRate ?? 1.8);
+              const feeAmount = isShopee
+                ? (showDetail.shopeeFeeAmount ?? Math.round(showDetail.total * (feeRate / 100)))
+                : (showDetail.tiktokFeeAmount ?? Math.round(showDetail.total * (feeRate / 100)));
+              const netPayout = Math.max(0, showDetail.total - feeAmount);
+
+              return (
+                <div className="bg-gradient-to-r from-gray-800/60 to-gray-850/60 rounded-xl p-3 border border-gray-700/60 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-semibold text-gray-300">
+                    <span className="flex items-center gap-1.5">
+                      {isShopee ? "🛍️ Đối Soát Kênh Người Bán Shopee" : "🎵 Đối Soát TikTok Shop"}
+                    </span>
+                    <span className="text-[11px] text-gray-400">
+                      Tỷ lệ phí sàn: <strong className="text-amber-400 font-mono">{feeRate}%</strong>
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs pt-1.5 border-t border-gray-800">
+                    <div>
+                      <p className="text-[11px] text-gray-400">Doanh thu đơn</p>
+                      <p className="font-semibold text-white mt-0.5">{formatCurrency(showDetail.total)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-gray-400">Phí sàn {isShopee ? "Shopee" : "TikTok"}</p>
+                      <p className="font-semibold text-rose-400 mt-0.5">-{formatCurrency(feeAmount)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-gray-400">Thực nhận về ví</p>
+                      <p className="font-bold text-emerald-400 mt-0.5">{formatCurrency(netPayout)}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="flex justify-between items-center pt-2 border-t border-gray-800 flex-wrap gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 {showDetail.customerPhone && (
@@ -1182,18 +1351,52 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
                     <MessageSquare size={13} /> Chat Zalo
                   </a>
                 )}
-                <a
-                  href={`https://seller-vn.tiktok.com/chat${showDetail.tiktokOrderId ? `?order_id=${showDetail.tiktokOrderId}` : ""}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-secondary text-xs flex items-center gap-1.5 text-rose-400 hover:text-rose-300 border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20"
-                  title="Mở chat TikTok Shop với khách"
-                >
-                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
-                  </svg>
-                  <span>Chat TikTok Shop</span>
-                </a>
+                {showDetail.channel === "shopee" || showDetail.shopeeOrderId ? (
+                  <>
+                    <a
+                      href={`https://banhang.shopee.vn/portal/sale/order/${showDetail.shopeeOrderId || showDetail.tiktokOrderId || ""}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn-secondary text-xs flex items-center gap-1.5 text-orange-400 hover:text-orange-300 border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20"
+                      title="Mở đơn trực tiếp trên Kênh Người Bán Shopee"
+                    >
+                      <span>🛍️ Đơn Shopee</span>
+                    </a>
+                    <a
+                      href="https://banhang.shopee.vn/webchat/conversations"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn-secondary text-xs flex items-center gap-1.5 text-orange-400 hover:text-orange-300 border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20"
+                      title="Mở Shopee Chat Web"
+                    >
+                      <span>💬 Shopee Chat</span>
+                    </a>
+                    {showDetail.trackingNumber && (
+                      <a
+                        href={`https://spx.vn/track?${showDetail.trackingNumber}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn-secondary text-xs flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 border-cyan-500/30 bg-cyan-500/10"
+                        title="Tra cứu lộ trình bưu kiện SPX Express"
+                      >
+                        <Truck size={13} /> Tra cứu SPX
+                      </a>
+                    )}
+                  </>
+                ) : (
+                  <a
+                    href={`https://seller-vn.tiktok.com/chat${showDetail.tiktokOrderId ? `?order_id=${showDetail.tiktokOrderId}` : ""}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-secondary text-xs flex items-center gap-1.5 text-rose-400 hover:text-rose-300 border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20"
+                    title="Mở chat TikTok Shop với khách"
+                  >
+                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .57.04.84.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.78 4.49 6.27 6.27 0 0 0 1.9-4.49V8.69a8.18 8.18 0 0 0 4.79 1.54V6.78a4.85 4.85 0 0 1-.88-.09z"/>
+                    </svg>
+                    <span>Chat TikTok Shop</span>
+                  </a>
+                )}
                 <button
                   type="button"
                   onClick={() => setQuickMsgOrder(showDetail)}
@@ -1272,6 +1475,70 @@ export default function Orders({ defaultFilter }: OrdersProps = {}) {
           shopName="Henr.Studio - Đồ Ngủ Thiết Kế"
           shopPhone="0988 234 567"
         />
+      )}
+
+      {/* Reason Modal (Cancel / Return) */}
+      {reasonModal && (
+        <Modal
+          isOpen={true}
+          onClose={() => setReasonModal(null)}
+          title={
+            reasonModal.targetStatus === "cancelled"
+              ? "Xác nhận lý do hủy đơn hàng"
+              : "Xác nhận lý do yêu cầu trả hàng / hoàn tiền"
+          }
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="label">
+                {reasonModal.targetStatus === "cancelled" ? "Lý do hủy đơn *" : "Lý do hoàn trả *"}
+              </label>
+              <select
+                className="input"
+                value={reasonModal.selectedReason}
+                onChange={(e) =>
+                  setReasonModal((p) => (p ? { ...p, selectedReason: e.target.value } : null))
+                }
+              >
+                {Object.entries(
+                  reasonModal.targetStatus === "cancelled" ? CANCEL_REASONS_MAP : RETURN_REASONS_MAP
+                ).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Ghi chú chi tiết</label>
+              <textarea
+                rows={2}
+                className="input"
+                value={reasonModal.customNote}
+                onChange={(e) =>
+                  setReasonModal((p) => (p ? { ...p, customNote: e.target.value } : null))
+                }
+                placeholder="Nhập thêm chi tiết nếu cần..."
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-800">
+              <button
+                type="button"
+                onClick={() => setReasonModal(null)}
+                className="btn-secondary"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={confirmStatusWithReason}
+                className="btn-primary"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

@@ -43,9 +43,16 @@ export type StockMovementType =
   | "gift"
   | "loss";
 
+export type SalesChannel =
+  | "tiktok"
+  | "shopee"
+  | "website"
+  | "live";
+
 export type ExpenseCategory =
   | "cogs"
   | "tiktok_fee"
+  | "shopee_fee"
   | "advertising"
   | "shipping"
   | "labor"
@@ -128,6 +135,8 @@ export interface OrderItem {
 export interface Order {
   id: string;
   tiktokOrderId?: string;
+  shopeeOrderId?: string;
+  channel?: SalesChannel;
   customerName: string;
   customerPhone?: string;
   customerAddress?: string;
@@ -159,6 +168,9 @@ export interface Order {
   note?: string;
   tiktokFeeRate?: number;
   tiktokFeeAmount?: number;
+  shopeeFeeRate?: number;
+  shopeeFeeAmount?: number;
+  shopeeCarrier?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -171,6 +183,8 @@ export interface Return {
   id: string;
   orderId: string;
   tiktokOrderId?: string;
+  shopeeOrderId?: string;
+  channel?: SalesChannel;
   customerName: string;
   items: OrderItem[];
   reason: ReturnReason;
@@ -229,6 +243,7 @@ export interface AppSettings {
   shopName: string;
   currency: string;
   tiktokFeeRate: number;
+  shopeeFeeRate?: number;
   lowStockDefault: number;
   shippingCostPerOrder?: number;
 }
@@ -283,7 +298,6 @@ export interface LiveSession {
   updatedAt: string;
 }
 
-
 export interface PromoSettings {
   enableLuckyWheel: boolean;
   enableVoucher: boolean;
@@ -315,8 +329,6 @@ export const DEFAULT_WEBSHIELD_SETTINGS: WebShieldSettings = {
   showToast: true,
   blockShortcuts: true,
 };
-
-
 
 // =====================
 // ENTERPRISE SUITE: REAL BANKING, CARRIER, CLOUD & EXCHANGE

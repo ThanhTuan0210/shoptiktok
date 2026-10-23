@@ -1,15 +1,14 @@
 import { useEffect, useState, useMemo } from "react";
 import { db } from "../db/database";
-import type { Order, OrderStatus } from "../types";
+import type { Order } from "../types";
 import {
-  Truck, CheckCircle, Clock, MapPin, Search, RefreshCw, Package,
-  AlertTriangle, ArrowRight, Check
+  Truck, CheckCircle, Clock, Package, Check
 } from "lucide-react";
 import SearchInput from "../components/ui/SearchInput";
 import EmptyState from "../components/ui/EmptyState";
 import Modal from "../components/ui/Modal";
 import {
-  formatCurrency, formatDate, formatNumber, generateId, now, today, truncate
+  formatCurrency, formatDate, now, today, truncate, getChannelBadge
 } from "../utils/helpers";
 
 const CARRIERS = ["GHTK", "GHN", "J&T Express", "Viettel Post", "SPX Express", "Ninja Van"];
@@ -46,9 +45,11 @@ export default function Shipping() {
       const matchSearch = !search
         || o.customerName.toLowerCase().includes(q)
         || (o.tiktokOrderId || "").toLowerCase().includes(q)
+        || (o.shopeeOrderId || "").toLowerCase().includes(q)
         || (o.customerPhone || "").includes(search)
         || (o.trackingNumber || "").toLowerCase().includes(q);
-      const matchCarrier = selectedCarrier === "all" || o.shippingCarrier === selectedCarrier;
+      const carrier = o.shopeeCarrier || o.shippingCarrier;
+      const matchCarrier = selectedCarrier === "all" || carrier === selectedCarrier;
       return matchSearch && matchCarrier;
     });
   }, [orders, search, selectedCarrier]);
@@ -78,11 +79,14 @@ export default function Shipping() {
 
   async function markShipping(order: Order) {
     setUpdatingId(order.id);
-    const defaultCarrier = order.shippingCarrier || "GHTK";
-    const tracking = order.trackingNumber || `${defaultCarrier.slice(0, 3).toUpperCase()}${Math.floor(100000000 + Math.random() * 900000000)}`;
+    const isShopee = order.channel === "shopee" || Boolean(order.shopeeOrderId);
+    const defaultCarrier = order.shopeeCarrier || order.shippingCarrier || (isShopee ? "SPX Express" : "GHTK");
+    const isSPX = defaultCarrier.toLowerCase().includes("spx");
+    const tracking = order.trackingNumber || (isSPX ? `SPXVN${Math.floor(1000000000 + Math.random() * 9000000000)}` : `${defaultCarrier.slice(0, 3).toUpperCase()}${Math.floor(100000000 + Math.random() * 900000000)}`);
     await db.orders.update(order.id, {
       status: "shipping",
       shippingCarrier: defaultCarrier,
+      shopeeCarrier: isShopee ? defaultCarrier : order.shopeeCarrier,
       trackingNumber: tracking,
       shippingDate: today(),
       updatedAt: now(),
@@ -230,11 +234,12 @@ export default function Shipping() {
               <div key={order.id} className="card-sm hover:border-blue-700/50 transition-colors bg-gray-900/90 flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex-1 min-w-[200px]">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
+                    {getChannelBadge(order.channel, order)}
                     <span className="font-semibold text-white text-sm">{order.customerName}</span>
-                    <span className="font-mono text-xs text-blue-400">{order.tiktokOrderId}</span>
+                    <span className="font-mono text-xs text-blue-400">#{order.shopeeOrderId || order.tiktokOrderId}</span>
                   </div>
                   <p className="text-xs text-gray-400">
-                    ĐVVC dự kiến: <span className="text-gray-200 font-medium">{order.shippingCarrier || "GHTK"}</span> • {formatCurrency(order.total)}
+                    ĐVVC dự kiến: <span className="text-gray-200 font-medium">{order.shopeeCarrier || order.shippingCarrier || (order.channel === "shopee" ? "SPX Express" : "GHTK")}</span> • {formatCurrency(order.total)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -267,14 +272,35 @@ export default function Shipping() {
           <div className="space-y-2.5">
             {shippingOrders.map(order => {
               const days = getDaysInTransit(order);
+              const carrierName = order.shopeeCarrier || order.shippingCarrier || "SPX Express";
+              const isSPX = carrierName.toLowerCase().includes("spx") || order.channel === "shopee";
+
               return (
                 <div key={order.id} className="card-sm hover:border-purple-700/50 transition-colors bg-gray-900/90 flex items-center justify-between gap-4 flex-wrap">
                   <div className="flex-1 min-w-[200px]">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
+                      {getChannelBadge(order.channel, order)}
                       <span className="font-semibold text-white text-sm">{order.customerName}</span>
-                      <span className="font-mono text-xs text-purple-300">{order.tiktokOrderId}</span>
-                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800/40">
-                        {order.shippingCarrier}: {order.trackingNumber || "Chưa có mã"}
+                      <span className="font-mono text-xs text-purple-300">#{order.shopeeOrderId || order.tiktokOrderId}</span>
+                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800/40 inline-flex items-center gap-1">
+                        <span>{carrierName}:</span>
+                        {order.trackingNumber ? (
+                          isSPX ? (
+                            <a
+                              href={`https://spx.vn/track?${order.trackingNumber}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-cyan-400 hover:underline"
+                              title="Xem lộ trình trên SPX Express"
+                            >
+                              {order.trackingNumber}
+                            </a>
+                          ) : (
+                            <span>{order.trackingNumber}</span>
+                          )
+                        ) : (
+                          <span className="text-gray-500">Chưa có mã</span>
+                        )}
                       </span>
                     </div>
                     <p className="text-xs text-gray-400">

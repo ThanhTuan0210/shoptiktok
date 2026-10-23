@@ -126,7 +126,8 @@ export const getExpenseCategoryLabel = (cat: string): string => {
   const map: Record<string, string> = {
     cogs: "Giá vốn hàng bán (COGS)",
     tiktok_fee: "Phí sàn TikTok Shop",
-    advertising: "Quảng cáo TikTok Ads",
+    shopee_fee: "Phí sàn Shopee (Cố định & Thanh toán)",
+    advertising: "Quảng cáo Ads",
     shipping: "Cước phí vận chuyển",
     labor: "Lương & Nhân công",
     warehouse: "Thuê mặt bằng kho",
@@ -135,6 +136,27 @@ export const getExpenseCategoryLabel = (cat: string): string => {
     other: "Chi phí vận hành khác",
   };
   return map[cat] || cat;
+};
+
+export const getChannelLabel = (channel?: string, order?: { tiktokOrderId?: string; shopeeOrderId?: string; liveSessionId?: string }): string => {
+  if (channel === "shopee" || (order?.shopeeOrderId && !order?.tiktokOrderId)) return "Shopee";
+  if (channel === "website" || (order?.tiktokOrderId && order.tiktokOrderId.startsWith("WEB-"))) return "Website";
+  if (channel === "live" || order?.liveSessionId) return "Live";
+  return "TikTok Shop";
+};
+
+export const getChannelBadge = (channel?: string, order?: { tiktokOrderId?: string; shopeeOrderId?: string; liveSessionId?: string }): { label: string; bg: string; text: string; border: string; icon: string } => {
+  const ch = getChannelLabel(channel, order);
+  if (ch === "Shopee") {
+    return { label: "Shopee", bg: "bg-orange-500/10", text: "text-orange-400", border: "border-orange-500/30", icon: "🛍️" };
+  }
+  if (ch === "Website") {
+    return { label: "Website", bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/30", icon: "🌐" };
+  }
+  if (ch === "Live") {
+    return { label: "Live Stream", bg: "bg-rose-500/10", text: "text-rose-400", border: "border-rose-500/30", icon: "🔴" };
+  }
+  return { label: "TikTok Shop", bg: "bg-pink-500/10", text: "text-pink-400", border: "border-pink-500/30", icon: "🎵" };
 };
 
 export const getStockMovementLabel = (type: string): string => {

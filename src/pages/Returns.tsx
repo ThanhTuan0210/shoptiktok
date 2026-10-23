@@ -15,7 +15,7 @@ const STATUSES: ReturnStatus[] = ["pending","received","restocked","disposed"];
 const COLORS = ["#f43f5e","#3b82f6","#10b981","#f59e0b","#8b5cf6","#06b6d4","#ec4899","#84cc16"];
 
 const emptyReturn: Omit<Return, "id" | "createdAt" | "updatedAt"> = {
-  orderId: "", tiktokOrderId: "", customerName: "",
+  orderId: "", tiktokOrderId: "", shopeeOrderId: "", customerName: "",
   items: [], reason: "wrong_size", reasonDetail: "",
   status: "pending", returnDate: today(),
   refundAmount: 0, shippingBack: 0, note: "",
@@ -44,9 +44,11 @@ export default function Returns() {
 
   const filtered = useMemo(() => {
     return returns.filter(r => {
-      const matchSearch = !search || r.customerName.toLowerCase().includes(search.toLowerCase())
-        || r.orderId.toLowerCase().includes(search.toLowerCase())
-        || (r.tiktokOrderId || "").toLowerCase().includes(search.toLowerCase());
+      const q = search.toLowerCase();
+      const matchSearch = !search || r.customerName.toLowerCase().includes(q)
+        || r.orderId.toLowerCase().includes(q)
+        || (r.tiktokOrderId || "").toLowerCase().includes(q)
+        || (r.shopeeOrderId || "").toLowerCase().includes(q);
       const matchStatus = statusFilter === "all" || r.status === statusFilter;
       const matchReason = reasonFilter === "all" || r.reason === reasonFilter;
       return matchSearch && matchStatus && matchReason;
@@ -232,8 +234,23 @@ export default function Returns() {
             ) : filtered.map(r => (
               <tr key={r.id}>
                 <td className="font-mono text-xs">
-                  <p className="text-gray-300">{r.orderId.slice(-8)}</p>
-                  {r.tiktokOrderId && <p className="text-gray-500">{r.tiktokOrderId.slice(-12)}</p>}
+                  <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                    {r.channel === "shopee" || Boolean(r.shopeeOrderId) ? (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-500/20 text-[#EE4D2D] border border-orange-500/30">
+                        🛍️ Shopee
+                      </span>
+                    ) : r.channel === "website" ? (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                        🌐 Web
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                        🎵 TikTok
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-gray-200 font-bold">{r.shopeeOrderId || r.tiktokOrderId || r.orderId.slice(-8)}</p>
+                  {(r.shopeeOrderId || r.tiktokOrderId) && <p className="text-gray-500 text-[11px]">{r.orderId.slice(-8)}</p>}
                 </td>
                 <td className="whitespace-nowrap">{formatDate(r.returnDate)}</td>
                 <td className="font-medium text-white">{r.customerName}</td>

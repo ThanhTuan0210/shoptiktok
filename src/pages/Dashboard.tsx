@@ -62,6 +62,11 @@ export default function Dashboard() {
   const [bestSellers, setBestSellers] = useState<Array<{ name: string; qty: number; revenue: number }>>([]);
   const [returnReasons, setReturnReasons] = useState<Array<{ name: string; value: number }>>([]);
   const [statusDist, setStatusDist] = useState<Array<{ name: string; value: number }>>([]);
+  const [channelStats, setChannelStats] = useState({
+    shopee: { revenue: 0, orders: 0 },
+    tiktok: { revenue: 0, orders: 0 },
+    web: { revenue: 0, orders: 0 },
+  });
   const [liveOrderToast, setLiveOrderToast] = useState<OrderBroadcastPayload | null>(null);
 
   useEffect(() => {
@@ -190,6 +195,32 @@ export default function Dashboard() {
         delivered: "Đã giao", returned: "Hoàn", cancelled: "Hủy", return_requested: "YC hoàn",
       };
       const statusData = Object.entries(statusCounts).map(([k, v]) => ({ name: statusLabels[k] || k, value: v }));
+
+      // Omnichannel breakdown
+      let shopeeRev = 0, shopeeCount = 0;
+      let tiktokRev = 0, tiktokCount = 0;
+      let webRev = 0, webCount = 0;
+
+      curOrders.forEach(o => {
+        const isShopee = o.channel === "shopee" || Boolean(o.shopeeOrderId) || (o.note || "").toLowerCase().includes("shopee");
+        const isWeb = o.channel === "website" || (o.tiktokOrderId || "").startsWith("WEB-");
+        if (isShopee) {
+          shopeeRev += o.total;
+          shopeeCount++;
+        } else if (isWeb) {
+          webRev += o.total;
+          webCount++;
+        } else {
+          tiktokRev += o.total;
+          tiktokCount++;
+        }
+      });
+
+      setChannelStats({
+        shopee: { revenue: shopeeRev, orders: shopeeCount },
+        tiktok: { revenue: tiktokRev, orders: tiktokCount },
+        web: { revenue: webRev, orders: webCount },
+      });
 
       setStats({
         revenue, prevRevenue, orders: curOrders.length, prevOrders: prevOrders.length,
@@ -475,6 +506,89 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* TỶ TRỌNG KÊNH BÁN HÀNG OMNICHANNEL */}
+      <div className="bg-gradient-to-r from-gray-900 via-gray-900/90 to-gray-900 border border-gray-800 rounded-xl p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Radio size={16} className="text-rose-500 animate-pulse" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+              Hiệu suất Đa Kênh ({period} ngày qua)
+            </h3>
+          </div>
+          <span className="text-xs text-gray-400">
+            Tổng: <strong className="text-white">{formatCurrency(stats.revenue)}</strong> ({formatNumber(stats.orders)} đơn)
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* TikTok Shop */}
+          <div
+            onClick={() => navigate("/orders?channel=tiktok")}
+            className="p-3.5 rounded-lg bg-gray-950/60 border border-rose-900/30 hover:border-rose-500/50 cursor-pointer transition-all group"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                🎵 TikTok Shop
+              </span>
+              <span className="text-[11px] font-mono font-semibold text-rose-300 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                {stats.revenue > 0 ? Math.round((channelStats.tiktok.revenue / stats.revenue) * 100) : 0}% DS
+              </span>
+            </div>
+            <p className="text-lg font-bold text-white group-hover:text-rose-300 transition-colors">
+              {formatCurrency(channelStats.tiktok.revenue)}
+            </p>
+            <p className="text-xs text-gray-400 mt-1 flex items-center justify-between">
+              <span>{formatNumber(channelStats.tiktok.orders)} đơn hàng</span>
+              <span className="text-[11px] text-gray-500 group-hover:text-rose-400 inline-flex items-center">Chi tiết &rarr;</span>
+            </p>
+          </div>
+
+          {/* Shopee */}
+          <div
+            onClick={() => navigate("/orders?channel=shopee")}
+            className="p-3.5 rounded-lg bg-gray-950/60 border border-orange-900/30 hover:border-orange-500/50 cursor-pointer transition-all group"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-bold text-[#EE4D2D] flex items-center gap-1.5">
+                🛍️ Shopee
+              </span>
+              <span className="text-[11px] font-mono font-semibold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20">
+                {stats.revenue > 0 ? Math.round((channelStats.shopee.revenue / stats.revenue) * 100) : 0}% DS
+              </span>
+            </div>
+            <p className="text-lg font-bold text-white group-hover:text-orange-300 transition-colors">
+              {formatCurrency(channelStats.shopee.revenue)}
+            </p>
+            <p className="text-xs text-gray-400 mt-1 flex items-center justify-between">
+              <span>{formatNumber(channelStats.shopee.orders)} đơn hàng</span>
+              <span className="text-[11px] text-gray-500 group-hover:text-orange-400 inline-flex items-center">Chi tiết &rarr;</span>
+            </p>
+          </div>
+
+          {/* Website & Live */}
+          <div
+            onClick={() => navigate("/orders?channel=website")}
+            className="p-3.5 rounded-lg bg-gray-950/60 border border-indigo-900/30 hover:border-indigo-500/50 cursor-pointer transition-all group"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
+                🌐 Website / Trực tiếp
+              </span>
+              <span className="text-[11px] font-mono font-semibold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                {stats.revenue > 0 ? Math.round((channelStats.web.revenue / stats.revenue) * 100) : 0}% DS
+              </span>
+            </div>
+            <p className="text-lg font-bold text-white group-hover:text-indigo-300 transition-colors">
+              {formatCurrency(channelStats.web.revenue)}
+            </p>
+            <p className="text-xs text-gray-400 mt-1 flex items-center justify-between">
+              <span>{formatNumber(channelStats.web.orders)} đơn hàng</span>
+              <span className="text-[11px] text-gray-500 group-hover:text-indigo-400 inline-flex items-center">Chi tiết &rarr;</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* ĐƠN HÀNG MỚI NHẤT CẦN XỬ LÝ (QUICK ACTION TABLE) */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm">
         <div className="p-4 border-b border-gray-800 flex items-center justify-between flex-wrap gap-2">
@@ -499,7 +613,7 @@ export default function Dashboard() {
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-800/60 text-gray-400 text-xs uppercase border-b border-gray-800">
                 <tr>
-                  <th className="py-3 px-4">Mã đơn</th>
+                  <th className="py-3 px-4">Mã đơn & Kênh</th>
                   <th className="py-3 px-4">Khách hàng & SĐT</th>
                   <th className="py-3 px-4">Sản phẩm đặt</th>
                   <th className="py-3 px-4 text-right">Tổng tiền (COD)</th>
@@ -515,7 +629,22 @@ export default function Dashboard() {
                   return (
                     <tr key={order.id} className="hover:bg-gray-800/40 transition-colors">
                       <td className="py-3 px-4 font-mono text-xs font-bold text-white">
-                        {order.tiktokOrderId || truncate(order.id, 12)}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {order.channel === "shopee" || Boolean(order.shopeeOrderId) || (order.note || "").toLowerCase().includes("shopee") ? (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-500/20 text-[#EE4D2D] border border-orange-500/30">
+                              🛍️ Shopee
+                            </span>
+                          ) : order.channel === "website" || (order.tiktokOrderId || "").startsWith("WEB-") ? (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                              🌐 Web
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                              🎵 TikTok
+                            </span>
+                          )}
+                          <span>{order.shopeeOrderId || order.tiktokOrderId || truncate(order.id, 12)}</span>
+                        </div>
                         <p className="text-[11px] text-gray-500 font-normal mt-0.5">{formatDate(order.orderDate)}</p>
                       </td>
                       <td className="py-3 px-4">

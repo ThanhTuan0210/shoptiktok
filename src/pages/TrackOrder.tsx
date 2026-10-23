@@ -86,9 +86,17 @@ export default function TrackOrder() {
 
     const allOrders = await db.orders.reverse().toArray();
     const found = allOrders.filter(o => {
-      // Match by order code (e.g. WEB-1234ABCD or TT12345678)
+      // Match by order code (e.g. WEB-1234ABCD, TT12345678, Shopee Order ID, or tracking code)
       const orderCode = (o.tiktokOrderId || "").toUpperCase();
-      if (orderCode.includes(cleanQuery.toUpperCase())) return true;
+      const shopeeCode = (o.shopeeOrderId || "").toUpperCase();
+      const trackingCode = (o.trackingNumber || "").toUpperCase();
+      const internalId = o.id.toUpperCase();
+      const qUpper = cleanQuery.toUpperCase();
+
+      if (orderCode.includes(qUpper)) return true;
+      if (shopeeCode.includes(qUpper)) return true;
+      if (trackingCode.includes(qUpper)) return true;
+      if (internalId.includes(qUpper)) return true;
 
       // Match by phone number
       const orderPhone = (o.customerPhone || "").replace(/\D/g, "");
@@ -306,10 +314,26 @@ export default function TrackOrder() {
                           </div>
                           <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
                             <p className="text-gray-400 font-bold uppercase text-[10px] mb-1">Đơn vị vận chuyển</p>
-                            <p className="font-bold text-gray-900">{order.shippingCarrier || "GHTK Express"}</p>
-                            <p className="text-gray-500 font-mono text-[11px] mt-0.5">
-                              Mã VĐ: {order.trackingNumber || "Đang tạo mã vận đơn"}
-                            </p>
+                            <p className="font-bold text-gray-900">{order.shopeeCarrier || order.shippingCarrier || (order.channel === "shopee" ? "SPX Express" : "GHTK Express")}</p>
+                            <div className="text-gray-500 font-mono text-[11px] mt-0.5">
+                              {order.trackingNumber ? (
+                                ((order.shopeeCarrier || order.shippingCarrier || "").toLowerCase().includes("spx") || order.channel === "shopee") ? (
+                                  <a
+                                    href={`https://spx.vn/track?${order.trackingNumber}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-cyan-600 hover:text-cyan-700 hover:underline inline-flex items-center gap-1 font-bold"
+                                    title="Bấm để tra cứu lộ trình trực tiếp trên SPX Express"
+                                  >
+                                    Mã VĐ: {order.trackingNumber} ↗
+                                  </a>
+                                ) : (
+                                  <span>Mã VĐ: {order.trackingNumber}</span>
+                                )
+                              ) : (
+                                <span>Đang tạo mã vận đơn</span>
+                              )}
+                            </div>
                           </div>
                         </div>
 

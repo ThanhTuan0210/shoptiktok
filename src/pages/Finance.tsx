@@ -13,8 +13,8 @@ import {
 } from "recharts";
 import { subDays, format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 
-const EXPENSE_CATS: ExpenseCategory[] = ["cogs","tiktok_fee","advertising","shipping","labor","warehouse","packaging","livestream","other"];
-const COLORS = ["#f43f5e","#3b82f6","#10b981","#f59e0b","#8b5cf6","#06b6d4","#ec4899","#84cc16","#6b7280"];
+const EXPENSE_CATS: ExpenseCategory[] = ["cogs","tiktok_fee","shopee_fee","advertising","shipping","labor","warehouse","packaging","livestream","other"];
+const COLORS = ["#f43f5e","#3b82f6","#ee4d2d","#10b981","#f59e0b","#8b5cf6","#06b6d4","#ec4899","#84cc16","#6b7280"];
 
 export default function Finance() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -31,7 +31,12 @@ export default function Finance() {
 
   const [financeData, setFinanceData] = useState({
     revenue: 0, cogs: 0, grossProfit: 0, totalExpenses: 0, netProfit: 0,
-    tiktokFees: 0, shippingCost: 0,
+    tiktokFees: 0, shopeeFees: 0, shippingCost: 0,
+    channelBreakdown: {
+      shopee: { revenue: 0, orders: 0, fees: 0 },
+      tiktok: { revenue: 0, orders: 0, fees: 0 },
+      website: { revenue: 0, orders: 0, fees: 0 },
+    }
   });
   const [chartData, setChartData] = useState<any[]>([]);
 
@@ -62,10 +67,37 @@ export default function Finance() {
     const grossProfit = revenue - cogs;
     const totalExpenses = curExpenses.reduce((s, e) => s + e.amount, 0);
     const tiktokFees = curOrders.reduce((s, o) => s + (o.tiktokFeeAmount || 0), 0);
+    const shopeeFees = curOrders.reduce((s, o) => s + (o.shopeeFeeAmount || 0), 0);
     const returnCost = curReturns.reduce((s, r) => s + r.refundAmount + (r.shippingBack || 0), 0);
-    const netProfit = grossProfit - totalExpenses - tiktokFees;
+    const netProfit = grossProfit - totalExpenses - tiktokFees - shopeeFees;
 
-    setFinanceData({ revenue, cogs, grossProfit, totalExpenses, netProfit, tiktokFees, shippingCost: 0 });
+    // Channel-specific breakdowns
+    const shopeeOrders = curOrders.filter(o => o.channel === "shopee" || Boolean(o.shopeeOrderId) || (o.note || "").toLowerCase().includes("shopee"));
+    const tiktokOrders = curOrders.filter(o => (o.channel === "tiktok" || !o.channel) && !(o.shopeeOrderId || (o.note || "").toLowerCase().includes("shopee")) && !(o.tiktokOrderId || "").startsWith("WEB-"));
+    const webOrders = curOrders.filter(o => o.channel === "website" || (o.tiktokOrderId || "").startsWith("WEB-"));
+
+    const channelBreakdown = {
+      shopee: {
+        revenue: shopeeOrders.reduce((s, o) => s + o.total, 0),
+        orders: shopeeOrders.length,
+        fees: shopeeOrders.reduce((s, o) => s + (o.shopeeFeeAmount || 0), 0),
+      },
+      tiktok: {
+        revenue: tiktokOrders.reduce((s, o) => s + o.total, 0),
+        orders: tiktokOrders.length,
+        fees: tiktokOrders.reduce((s, o) => s + (o.tiktokFeeAmount || 0), 0),
+      },
+      website: {
+        revenue: webOrders.reduce((s, o) => s + o.total, 0),
+        orders: webOrders.length,
+        fees: 0, // 0% platform fee for direct web
+      }
+    };
+
+    setFinanceData({
+      revenue, cogs, grossProfit, totalExpenses, netProfit,
+      tiktokFees, shopeeFees, shippingCost: 0, channelBreakdown
+    });
     setExpenses(allExpenses);
 
     // Monthly breakdown chart
@@ -191,19 +223,90 @@ export default function Finance() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="card-sm text-center">
           <p className="text-lg font-bold text-amber-400">{formatCurrency(financeData.tiktokFees)}</p>
-          <p className="text-xs text-gray-400 mt-1">Phí TikTok</p>
+          <p className="text-xs text-gray-400 mt-1">Phí TikTok Shop</p>
+        </div>
+        <div className="card-sm text-center">
+          <p className="text-lg font-bold text-[#EE4D2D]">{formatCurrency(financeData.shopeeFees)}</p>
+          <p className="text-xs text-gray-400 mt-1">Phí Sàn Shopee</p>
         </div>
         <div className="card-sm text-center">
           <p className="text-lg font-bold text-red-400">{formatCurrency(financeData.totalExpenses)}</p>
           <p className="text-xs text-gray-400 mt-1">Chi phí vận hành</p>
         </div>
         <div className="card-sm text-center">
-          <p className="text-lg font-bold text-purple-400">{profitMargin}%</p>
+          <p className="text-lg font-bold text-emerald-400">{profitMargin}%</p>
           <p className="text-xs text-gray-400 mt-1">Biên lợi nhuận ròng</p>
         </div>
-        <div className="card-sm text-center">
-          <p className="text-lg font-bold text-cyan-400">{formatCurrency(financeData.revenue - financeData.cogs - financeData.tiktokFees)}</p>
-          <p className="text-xs text-gray-400 mt-1">Sau phí TikTok</p>
+      </div>
+
+      {/* Omnichannel Performance & Fee Comparison Card */}
+      <div className="card bg-gradient-to-r from-gray-900 via-gray-900 to-orange-950/20 border-orange-900/30">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3 pb-2 border-b border-gray-800">
+          <div>
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <span>🛍️ Hiệu Quả & Phí Sàn Đa Kênh (Omnichannel Breakdown)</span>
+            </h3>
+            <p className="text-xs text-gray-400 mt-0.5">So sánh doanh thu thực nhận và gánh nặng phí hoa hồng giữa Shopee, TikTok Shop và Website</p>
+          </div>
+          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-orange-950/60 text-[#EE4D2D] border border-orange-800/60">
+            Shopee vs TikTok vs Web
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          {/* Shopee Channel */}
+          <div className="p-3.5 rounded-xl border border-[#EE4D2D]/30 bg-[#EE4D2D]/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-[#EE4D2D] flex items-center gap-1.5">
+                🛍️ Shopee Mall & Standard
+              </span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#EE4D2D]/20 text-[#EE4D2D]">
+                Phí ~9.5%
+              </span>
+            </div>
+            <p className="text-lg font-bold text-white">{formatCurrency(financeData.channelBreakdown.shopee.revenue)}</p>
+            <p className="text-xs text-gray-400 mt-1">{financeData.channelBreakdown.shopee.orders} đơn hàng thành công</p>
+            <div className="mt-2.5 pt-2 border-t border-gray-800 text-xs flex justify-between">
+              <span className="text-gray-400">Khấu trừ sàn:</span>
+              <span className="text-[#EE4D2D] font-bold">-{formatCurrency(financeData.channelBreakdown.shopee.fees)}</span>
+            </div>
+          </div>
+
+          {/* TikTok Channel */}
+          <div className="p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                🎵 TikTok Shop Live
+              </span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">
+                Phí ~1.8% - 6%
+              </span>
+            </div>
+            <p className="text-lg font-bold text-white">{formatCurrency(financeData.channelBreakdown.tiktok.revenue)}</p>
+            <p className="text-xs text-gray-400 mt-1">{financeData.channelBreakdown.tiktok.orders} đơn hàng thành công</p>
+            <div className="mt-2.5 pt-2 border-t border-gray-800 text-xs flex justify-between">
+              <span className="text-gray-400">Khấu trừ sàn:</span>
+              <span className="text-amber-400 font-bold">-{formatCurrency(financeData.channelBreakdown.tiktok.fees)}</span>
+            </div>
+          </div>
+
+          {/* Website Storefront */}
+          <div className="p-3.5 rounded-xl border border-blue-500/30 bg-blue-500/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-blue-400 flex items-center gap-1.5">
+                🛒 Website Storefront
+              </span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/60">
+                0% Phí Sàn (100% Giữ Lại)
+              </span>
+            </div>
+            <p className="text-lg font-bold text-white">{formatCurrency(financeData.channelBreakdown.website.revenue)}</p>
+            <p className="text-xs text-gray-400 mt-1">{financeData.channelBreakdown.website.orders} đơn hàng trực tiếp</p>
+            <div className="mt-2.5 pt-2 border-t border-gray-800 text-xs flex justify-between">
+              <span className="text-gray-400">Tiết kiệm hoa hồng:</span>
+              <span className="text-emerald-400 font-bold">0đ phí sàn</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -215,7 +318,8 @@ export default function Finance() {
             { label: "📈 Doanh thu bán hàng", value: financeData.revenue, color: "text-white" },
             { label: "  − Giá vốn hàng bán (COGS)", value: -financeData.cogs, color: "text-red-400" },
             { label: "= Lợi nhuận gộp", value: financeData.grossProfit, color: "text-blue-400", bold: true },
-            { label: "  − Phí TikTok", value: -financeData.tiktokFees, color: "text-amber-400" },
+            { label: "  − Phí TikTok Shop", value: -financeData.tiktokFees, color: "text-amber-400" },
+            { label: "  − Phí sàn Shopee (Cố định + Thanh toán)", value: -financeData.shopeeFees, color: "text-[#EE4D2D]" },
             { label: "  − Chi phí vận hành khác", value: -financeData.totalExpenses, color: "text-red-400" },
             { label: "= Lợi nhuận ròng", value: financeData.netProfit, color: financeData.netProfit >= 0 ? "text-emerald-400" : "text-red-400", bold: true, border: true },
           ].map((row, i) => (

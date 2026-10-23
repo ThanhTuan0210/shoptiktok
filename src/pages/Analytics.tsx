@@ -54,6 +54,15 @@ export default function Analytics() {
     const grossProfit = revenue - cogs;
     const totalExpenses = curExpenses.reduce((s, e) => s + e.amount, 0);
     const tiktokFees = curOrders.reduce((s, o) => s + (o.tiktokFeeAmount || 0), 0);
+    const shopeeFees = curOrders.reduce((s, o) => {
+      if (o.shopeeFeeAmount) return s + o.shopeeFeeAmount;
+      if (o.channel === "shopee" || o.shopeeOrderId) {
+        const rate = (o.shopeeFeeRate || 9.5) / 100;
+        return s + Math.round(o.total * rate);
+      }
+      return s;
+    }, 0);
+    const totalPlatformFees = tiktokFees + shopeeFees;
 
     setSummary({
       revenue,
@@ -61,7 +70,7 @@ export default function Analytics() {
       avgOrderValue: curOrders.length > 0 ? revenue / curOrders.length : 0,
       returnRate: curOrders.length > 0 ? (curReturns.length / curOrders.length) * 100 : 0,
       grossMargin: revenue > 0 ? (grossProfit / revenue) * 100 : 0,
-      netProfit: grossProfit - totalExpenses - tiktokFees,
+      netProfit: grossProfit - totalExpenses - totalPlatformFees,
       prevRevenue: prevOrders.reduce((s, o) => s + o.total, 0),
       prevOrders: prevOrders.length,
     });
@@ -75,10 +84,15 @@ export default function Analytics() {
       const dayReturns = curReturns.filter(r => r.returnDate.startsWith(ds));
       const dayRevenue = dayOrders.reduce((s, o) => s + o.total, 0);
       const dayCOGS = dayOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + (i.unitCost || 0) * i.quantity, 0), 0);
+      const dayFees = dayOrders.reduce((s, o) => {
+        const tt = o.tiktokFeeAmount || 0;
+        const sp = o.shopeeFeeAmount || ((o.channel === "shopee" || o.shopeeOrderId) ? Math.round(o.total * ((o.shopeeFeeRate || 9.5) / 100)) : 0);
+        return s + tt + sp;
+      }, 0);
       daily.push({
-        date: format(day, period <= 14 ? "dd/MM" : "dd/MM"),
+        date: format(day, "dd/MM"),
         revenue: dayRevenue,
-        profit: dayRevenue - dayCOGS,
+        profit: dayRevenue - dayCOGS - dayFees,
         orders: dayOrders.length,
         returns: dayReturns.length,
       });
